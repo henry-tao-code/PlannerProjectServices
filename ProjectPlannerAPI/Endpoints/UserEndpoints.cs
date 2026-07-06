@@ -11,8 +11,7 @@ public static class UserEndpoints
     public static IEndpointRouteBuilder MapUserEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/users")
-            .WithTags("Users")
-            .RequireAuthorization();
+            .WithTags("Users");
 
         group.MapPost("/register", RegisterUserAsync)
             .AddEndpointFilter<ValidationFilter<CreateUserDto>>();
@@ -25,6 +24,8 @@ public static class UserEndpoints
 
         group.MapGet("/me", GetCurrentUserAsync)
             .RequireAuthorization();
+
+        group.MapGet("/username/{username}", GetByUsernameAsync);
 
         group.MapPut("/{id:int}", UpdateProfileAsync)
             .RequireAuthorization();
@@ -108,6 +109,18 @@ public static class UserEndpoints
         return user is null
             ? TypedResults.Unauthorized()
             : TypedResults.Ok(user);
+    }
+
+    private static async Task<IResult> GetByUsernameAsync(
+    string username,
+    IUserService userService,
+    CancellationToken ct)
+    {
+        var user = await userService.GetProfileByUsernameAsync(username, ct);
+
+        return user is null
+            ? Results.NotFound()
+            : Results.Ok(new { user.Id, user.Username });
     }
 
     // ---------------- UPDATE ----------------

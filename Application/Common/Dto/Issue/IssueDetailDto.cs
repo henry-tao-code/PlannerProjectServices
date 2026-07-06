@@ -41,4 +41,6 @@ public class IssueDetailDto
 
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
+
+    public uint RowVersion { get; init; }
 }

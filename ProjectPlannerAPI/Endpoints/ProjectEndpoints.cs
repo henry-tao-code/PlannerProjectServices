@@ -12,8 +12,7 @@ public static class ProjectEndpoints
     public static IEndpointRouteBuilder MapProjectEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/projects")
-            .WithTags("Projects")
-            .RequireAuthorization();
+            .WithTags("Projects");
 
         group.MapGet("/", ListProjectsAsync);
         group.MapPost("/", CreateProjectAsync);
@@ -32,8 +31,6 @@ public static class ProjectEndpoints
 
         return app;
     }
-
-    // ---------------- AUTH ----------------
 
     private static int GetUserIdOrThrow(ClaimsPrincipal user)
     {

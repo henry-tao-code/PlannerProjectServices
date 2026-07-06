@@ -12,6 +12,7 @@ static public class ConfigureServices
     {
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IProjectService, ProjectService>();
+        services.AddScoped<IProjectMemberService, ProjectMemberService>();
         services.AddScoped<ISprintService, SprintService>();
         services.AddScoped<IIssueService, IssueService>();
         services.AddScoped<ICommentService, CommentService>();

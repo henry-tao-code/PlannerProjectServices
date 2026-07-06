@@ -22,6 +22,7 @@ public class SprintRepository(ProjectPlannerDbContext context) : ISprintReposito
     {
         return await context.Sprints
             .AsNoTracking()
+            .Include(s => s.Issues)
             .Where(s => s.ProjectId == projectId)
             .OrderByDescending(s => s.StartDate)
             .ToListAsync(cancellationToken);

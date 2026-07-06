@@ -1,5 +1,4 @@
-﻿using ProjectPlanner.Application.Common.Dto;
-using ProjectPlanner.Application.Common.Dto.Project;
+﻿using ProjectPlanner.Application.Common.Dto.Project;
 
 namespace ProjectPlanner.Application.Services;
 
@@ -33,7 +32,7 @@ public interface IProjectService
     Task<IEnumerable<ProjectCalendarEventDto>> GetProjectCalendarAsync(
         int projectId,
         CancellationToken cancellationToken = default);
-    
+
     Task<IEnumerable<ProjectIssueListDto>> GetProjectListAsync(
         int projectId,
         CancellationToken cancellationToken = default);

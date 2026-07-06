@@ -24,6 +24,20 @@ public class HistoryRepository(ProjectPlannerDbContext context) : IHistoryReposi
             .ToListAsync(ct);
     }
 
+    public async Task<IEnumerable<IssueHistory>> GetByProjectIdAsync(
+    int projectId,
+    int take,
+    CancellationToken cancellationToken = default)
+    {
+        return await context.History
+            .AsNoTracking()
+            .Include(h => h.ChangedByUser)
+            .Where(h => h.Issue.ProjectId == projectId)
+            .OrderByDescending(h => h.ChangedAt)
+            .Take(take)
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task AddAsync(IssueHistory history, CancellationToken ct = default)
     {
         await context.History.AddAsync(history, ct);

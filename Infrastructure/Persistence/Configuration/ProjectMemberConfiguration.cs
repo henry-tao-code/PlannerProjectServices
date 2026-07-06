@@ -11,26 +11,37 @@ public class ProjectMemberConfiguration : IEntityTypeConfiguration<ProjectMember
     {
         builder.ToTable("ProjectMembers");
 
+        // ---------------- Composite Key ----------------
         builder.HasKey(pm => new { pm.ProjectId, pm.UserId });
 
+        // ---------------- Soft Delete ----------------
         builder.HasQueryFilter(pm => !pm.IsDeleted);
 
+        // ---------------- Role (INT ENUM) ----------------
         builder.Property(pm => pm.Role)
-            .HasConversion(
-                r => r.ToString(),
-                r => Enum.Parse<ProjectRole>(r))
-
-            .HasConversion(
-                    r => r.ToString(),
-                    r => Enum.Parse<ProjectRole>(r) 
-                )
-            .HasMaxLength(20)
+            .IsRequired()
+            .HasConversion<int>() // IMPORTANT: int mapping
             .HasDefaultValue(ProjectRole.Viewer);
+
+        // ---------------- Relationships ----------------
 
         builder.HasOne(pm => pm.Project)
             .WithMany(p => p.ProjectMembers)
             .HasForeignKey(pm => pm.ProjectId)
-            .OnDelete(DeleteBehavior.Cascade)
-            .IsRequired(false);
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasOne(pm => pm.User)
+            .WithMany(u => u.ProjectMemberships)
+            .HasForeignKey(pm => pm.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // ---------------- Audit ----------------
+        builder.Property(pm => pm.JoinedAt)
+            .IsRequired();
+
+        builder.Property(pm => pm.UpdatedAt);
+
+        builder.Property(pm => pm.AddedByUserId);
+        builder.Property(pm => pm.UpdatedByUserId);
     }
 }

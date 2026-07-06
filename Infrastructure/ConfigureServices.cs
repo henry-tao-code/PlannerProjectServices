@@ -5,6 +5,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using ProjectPlanner.Application.Common.Interfaces.Persistence;
 using ProjectPlanner.Application.Common.Interfaces.Security;
+using ProjectPlanner.Application.Services;
+using ProjectPlanner.Application.Services.Implementations;
 using ProjectPlanner.Infrastructure.Persistence;
 using ProjectPlanner.Infrastructure.Persistence.Repositories;
 using ProjectPlanner.Infrastructure.Security;
@@ -33,6 +35,7 @@ public static class ConfigureServices
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IProjectRepository, ProjectRepository>();
+        services.AddScoped<IProjectMemberRepository, ProjectMemberRepository>();
         services.AddScoped<ISprintRepository, SprintRepository>();
         services.AddScoped<IIssueRepository, IssueRepository>();
         services.AddScoped<ICommentRepository, CommentRepository>();
@@ -49,6 +52,8 @@ public static class ConfigureServices
     {
         services.AddScoped<IPasswordHasher, PasswordHasher>();
         services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
+
+        services.AddScoped<IUserContext, UserContext>();
 
         services.AddAuthentication(options =>
         {

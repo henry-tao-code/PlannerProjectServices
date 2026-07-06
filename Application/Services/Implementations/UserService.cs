@@ -121,6 +121,12 @@ public class UserService(
         return user is null ? null : Map(user);
     }
 
+    public async Task<UserResponseDto?> GetProfileByUsernameAsync(string username, CancellationToken ct = default)
+    {
+        var user = await userRepository.GetByUsernameAsync(username, ct);
+        return user is null ? null : Map(user);
+    }
+
     public async Task<UserResponseDto> UpdateProfileAsync(
         int id,
         UpdateUserDto dto,

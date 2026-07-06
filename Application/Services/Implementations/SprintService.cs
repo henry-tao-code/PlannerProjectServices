@@ -7,10 +7,10 @@ using ProjectPlanner.Application.Common.Interfaces.Persistence;
 namespace ProjectPlanner.Application.Services.Implementations;
 
 public class SprintService(
-    ISprintRepository sprintRepository,
     IProjectRepository projectRepository,
-    IIssueRepository issueRepository,
-    IUnitOfWork unitOfWork) : ISprintService
+    ISprintRepository sprintRepository,
+    IUnitOfWork unitOfWork,
+    IUserContext userContext) : ISprintService
 {
 
     public async Task<SprintDto> CreateAsync(
@@ -83,7 +83,7 @@ public class SprintService(
         var sprint = await sprintRepository.GetByIdAsync(id, ct)
             ?? throw new KeyNotFoundException($"Sprint {id} not found.");
 
-        sprint.Start(); // DOMAIN LOGIC
+        sprint.Start();
 
         await unitOfWork.SaveChangesAsync(ct);
 
@@ -100,6 +100,8 @@ public class SprintService(
         var sprint = await sprintRepository.GetByIdAsync(id, ct)
             ?? throw new KeyNotFoundException($"Sprint {id} not found.");
 
+        var userId = userContext.UserId;
+
         Sprint? targetSprint = null;
 
         if (targetSprintIdForRollover.HasValue)
@@ -108,9 +110,18 @@ public class SprintService(
                 ?? throw new KeyNotFoundException("Target sprint not found.");
         }
 
-        foreach (var issue in sprint.Issues.Where(i => i.Status != IssueStatus.Done))
+        var issues = sprint.Issues.ToList();
+
+        foreach (var issue in issues)
         {
-            issue.MoveToSprint(targetSprint?.Id);
+            // Close unfinished issues
+            if (issue.Status != IssueStatus.Done)
+            {
+                issue.UpdateStatus(IssueStatus.Done, userId);
+            }
+
+            // Move all issues
+            issue.MoveToSprint(targetSprint?.Id, userId);
         }
 
         sprint.Complete();

@@ -1,5 +1,4 @@
 ﻿using Domain.Entities;
-using Domain.Enums;
 using ProjectPlanner.Application.Common.Dto.Issue;
 using ProjectPlanner.Application.Common.Interfaces.Persistence;
 
@@ -10,8 +9,8 @@ public class IssueService(
     ISprintRepository sprintRepository,
     IProjectRepository projectRepository,
     IUserRepository userRepository,
-    IHistoryService historyService,
-    IUnitOfWork unitOfWork) : IIssueService
+    IUnitOfWork unitOfWork,
+    IUserContext userContext) : IIssueService
 {
     public async Task<IssueDetailDto> CreateAsync(IssueCreateDto dto, CancellationToken ct = default)
     {
@@ -23,6 +22,8 @@ public class IssueService(
         var issueCount = await issueRepository.GetCountByProjectIdAsync(dto.ProjectId, ct);
         var issueKey = $"{project.Key}-{issueCount + 1}";
 
+        var userId = userContext.UserId;
+
         var issue = Issue.Create(
             issueKey: issueKey,
             title: dto.Title,
@@ -32,8 +33,8 @@ public class IssueService(
             issueType: dto.IssueType
         );
 
-        issue.MoveToSprint(sprintId);
-        issue.AssignTo(dto.AssigneeId);
+        issue.MoveToSprint(sprintId, userId);
+        issue.SetAssignee(dto.AssigneeId);
         issue.SetReporter(dto.ReporterId);
         issue.SetDueDate(dto.DueDate);
 
@@ -74,7 +75,10 @@ public class IssueService(
         ));
     }
 
-    public async Task<IssueDetailDto> UpdateCoreAsync(int id, UpdateIssueCoreDto dto, CancellationToken ct = default)
+    public async Task<IssueDetailDto> UpdateCoreAsync(
+    int id,
+    UpdateIssueCoreDto dto,
+    CancellationToken ct = default)
     {
         var issue = await issueRepository.GetByIdAsync(id, ct)
             ?? throw new KeyNotFoundException($"Issue {id} not found.");
@@ -82,6 +86,9 @@ public class IssueService(
         if (issue.RowVersion != dto.RowVersion)
             throw new InvalidOperationException("Concurrency conflict detected.");
 
+        var userId = userContext.UserId;
+
+        // Core fields
         issue.UpdateDetails(
             dto.Title,
             dto.Description,
@@ -90,14 +97,46 @@ public class IssueService(
             dto.StoryPoints
         );
 
+        // Status
         if (dto.Status.HasValue)
-            issue.UpdateStatus(dto.Status.Value);
+            issue.UpdateStatus(dto.Status.Value, userId);
+
+        // Dates
+        if (dto.StartDate.HasValue)
+            issue.SetStartDate(dto.StartDate.Value);
 
         if (dto.DueDate.HasValue)
             issue.SetDueDate(dto.DueDate.Value);
 
-        if (dto.StartDate.HasValue)
-            issue.SetStartDate(dto.StartDate.Value);
+        // Assignee / Reporter
+        issue.SetAssignee(dto.AssigneeId);
+        issue.SetReporter(dto.ReporterId);
+
+        // Sprint / Parent
+        issue.MoveToSprint(dto.SprintId, userId);
+        issue.SetParent(dto.ParentIssueId);
+
+        // Labels
+        if (dto.Labels is not null)
+        {
+            var incoming = dto.Labels
+                .Select(l => l.Trim())
+                .Where(l => !string.IsNullOrWhiteSpace(l))
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            var existing = issue.Labels.Select(l => l.Value).ToList();
+
+            foreach (var label in existing)
+            {
+                if (!incoming.Contains(label))
+                    issue.RemoveLabel(label);
+            }
+
+            foreach (var label in incoming)
+            {
+                issue.AddLabel(label);
+            }
+        }
 
         await unitOfWork.SaveChangesAsync(ct);
 
@@ -109,7 +148,7 @@ public class IssueService(
         var issue = await issueRepository.GetByIdAsync(id, ct)
             ?? throw new KeyNotFoundException($"Issue {id} not found.");
 
-        issue.AssignTo(dto.AssigneeId);
+        issue.SetAssignee(dto.AssigneeId);
         issue.SetReporter(dto.ReporterId);
 
         await unitOfWork.SaveChangesAsync(ct);
@@ -124,13 +163,15 @@ public class IssueService(
         var issue = await issueRepository.GetByIdAsync(issueId, ct)
             ?? throw new KeyNotFoundException($"Issue {issueId} not found.");
 
+        var userId = userContext.UserId;
+
         if (dto.TargetStatus.HasValue)
-            issue.UpdateStatus(dto.TargetStatus.Value);
+            issue.UpdateStatus(dto.TargetStatus.Value, userId);
 
         if (dto.TargetSprintId.HasValue)
         {
             var sprintId = await ResolveSprintAsync(issue.ProjectId, dto.TargetSprintId, ct);
-            issue.MoveToSprint(sprintId);
+            issue.MoveToSprint(sprintId, userId);
         }
 
         await unitOfWork.SaveChangesAsync(ct);
@@ -248,7 +289,8 @@ public class IssueService(
             Attachments = [],
 
             CreatedAt = issue.CreatedAt,
-            UpdatedAt = issue.UpdatedAt
+            UpdatedAt = issue.UpdatedAt,
+            RowVersion = issue.RowVersion
         };
     }
 

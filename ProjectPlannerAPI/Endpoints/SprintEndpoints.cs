@@ -15,9 +15,7 @@ public static class SprintEndpoints
         group.MapPost("/", CreateSprintAsync);
         group.MapGet("/{id:int}", GetSprintByIdAsync);
         group.MapGet("/project/{projectId:int}", GetSprintsByProjectIdAsync);
-
         group.MapPut("/{id:int}", UpdateSprintAsync);
-
         group.MapPost("/{id:int}/start", StartSprintAsync);
         group.MapPost("/{id:int}/complete", CompleteSprintAsync);
 
@@ -70,7 +68,12 @@ public static class SprintEndpoints
     }
 
     // ---------------- UPDATE ----------------
-    private static async Task<Results<Ok<SprintDto>, NotFound, Conflict<string>, BadRequest<string>>> UpdateSprintAsync(
+    private static async Task<Results<
+        Ok<SprintDto>,
+        NotFound<string>,
+        Conflict<string>,
+        BadRequest<string>>>
+    UpdateSprintAsync(
         int id,
         [FromBody] UpdateSprintDto dto,
         ISprintService sprintService,
@@ -83,7 +86,7 @@ public static class SprintEndpoints
         }
         catch (KeyNotFoundException ex)
         {
-            return TypedResults.NotFound();
+            return TypedResults.NotFound(ex.Message);
         }
         catch (InvalidOperationException ex)
         {
@@ -109,7 +112,11 @@ public static class SprintEndpoints
     }
 
     // ---------------- COMPLETE ----------------
-    private static async Task<Results<Ok<SprintDto>, NotFound, BadRequest<string>>> CompleteSprintAsync(
+    private static async Task<Results<
+        Ok<SprintDto>,
+        NotFound<string>,
+        BadRequest<string>>>
+    CompleteSprintAsync(
         int id,
         [FromQuery] int? targetSprintIdForRollover,
         ISprintService sprintService,
@@ -117,12 +124,16 @@ public static class SprintEndpoints
     {
         try
         {
-            var updated = await sprintService.CompleteSprintAsync(id, targetSprintIdForRollover, ct);
+            var updated = await sprintService.CompleteSprintAsync(
+                id,
+                targetSprintIdForRollover,
+                ct);
+
             return TypedResults.Ok(updated);
         }
         catch (KeyNotFoundException ex)
         {
-            return TypedResults.NotFound();
+            return TypedResults.NotFound(ex.Message);
         }
         catch (InvalidOperationException ex)
         {

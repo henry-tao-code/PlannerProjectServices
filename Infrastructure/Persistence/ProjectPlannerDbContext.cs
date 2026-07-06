@@ -22,9 +22,17 @@ public class ProjectPlannerDbContext(DbContextOptions<ProjectPlannerDbContext> o
 
         modelBuilder.HasDefaultSchema("app");
 
-        modelBuilder.ApplyConfigurationsFromAssembly(typeof(ProjectPlannerDbContext).Assembly);
+        modelBuilder.ApplyConfigurationsFromAssembly(
+            typeof(ProjectPlannerDbContext).Assembly
+        );
 
-        modelBuilder.Entity<ProjectMember>()
-            .HasKey(pm => new { pm.ProjectId, pm.UserId });
+        modelBuilder.Entity<User>()
+            .HasQueryFilter(u => !u.IsDeleted);
+
+        modelBuilder.Entity<Project>()
+            .HasQueryFilter(p => !p.IsArchived);
+
+        modelBuilder.Entity<Sprint>()
+            .HasQueryFilter(s => !s.IsDeleted);
     }
 }

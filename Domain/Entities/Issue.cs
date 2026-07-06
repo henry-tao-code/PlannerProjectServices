@@ -24,6 +24,9 @@ public class Issue
     public int? SprintId { get; private set; }
     public Sprint? Sprint { get; private set; }
 
+    public int? EpicId { get; private set; }
+    public Epic? Epic { get; private set; }
+
     public int? AssigneeId { get; private set; }
     public User? Assignee { get; private set; }
 
@@ -61,7 +64,6 @@ public class Issue
     public DateTime UpdatedAt { get; private set; }
 
     public bool IsDeleted { get; private set; }
-
     public uint RowVersion { get; set; }
 
     private Issue() { }
@@ -119,7 +121,7 @@ public class Issue
         Touch();
     }
 
-    public void AssignTo(int? userId)
+    public void SetAssignee(int? userId)
     {
         AssigneeId = userId;
         Touch();
@@ -131,18 +133,47 @@ public class Issue
         Touch();
     }
 
-    public void MoveToSprint(int? sprintId)
+    public void MoveToSprint(int? sprintId, int changedByUserId)
     {
+        if (SprintId == sprintId)
+            return;
+
+        var old = SprintId?.ToString();
+        var newValue = sprintId?.ToString();
+
         SprintId = sprintId;
+
+        AddHistory(
+            field: "SprintId",
+            oldValue: old,
+            newValue: newValue,
+            changedByUserId: changedByUserId
+        );
+
         Touch();
     }
 
-    public void UpdateStatus(IssueStatus status)
+    public void SetParent(int? ParentIssueId)
+    {
+        this.ParentIssueId = ParentIssueId;
+        Touch();
+    }
+
+    public void UpdateStatus(IssueStatus status, int changedByUserId)
     {
         if (Status == status)
             return;
 
+        var old = Status.ToString();
+
         Status = status;
+
+        AddHistory(
+            field: "Status",
+            oldValue: old,
+            newValue: status.ToString(),
+            changedByUserId: changedByUserId
+        );
 
         if (status == IssueStatus.InProgress)
             StartDate ??= DateTime.UtcNow;
@@ -223,6 +254,18 @@ public class Issue
     {
         IsDeleted = true;
         Touch();
+    }
+
+    private void AddHistory(string field, string? oldValue, string? newValue, int changedByUserId)
+    {
+        History.Add(new IssueHistory
+        {
+            Field = field,
+            OldValue = oldValue,
+            NewValue = newValue,
+            ChangedByUserId = changedByUserId,
+            IssueId = Id
+        });
     }
 
     private void Touch()

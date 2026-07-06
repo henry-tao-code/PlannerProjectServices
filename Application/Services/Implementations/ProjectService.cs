@@ -2,24 +2,30 @@
 using Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using ProjectPlanner.Application.Common;
-using ProjectPlanner.Application.Common.Dto;
 using ProjectPlanner.Application.Common.Dto.Development;
 using ProjectPlanner.Application.Common.Dto.Issue;
 using ProjectPlanner.Application.Common.Dto.Project;
 using ProjectPlanner.Application.Common.Dto.Shared;
 using ProjectPlanner.Application.Common.Interfaces.Persistence;
+using System.Data;
 
 namespace ProjectPlanner.Application.Services.Implementations;
 
 public class ProjectService(
     IUserRepository userRepository,
     IProjectRepository projectRepository,
+    IProjectMemberRepository projectMemberRepository,
     ISprintRepository sprintRepository,
+    IIssueRepository issueRepository,
+    IHistoryRepository historyRepository,
     IUnitOfWork unitOfWork) : IProjectService
 {
     private readonly IUserRepository _userRepository = userRepository;
     private readonly IProjectRepository _projectRepository = projectRepository;
+    private readonly IProjectMemberRepository _projectMemberRepository = projectMemberRepository;
     private readonly ISprintRepository _sprintRepository = sprintRepository;
+    private readonly IIssueRepository _issueRepository = issueRepository;
+    private readonly IHistoryRepository _historyRepository = historyRepository;
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
 
     public async Task<IEnumerable<ProjectDashboardResponseDto>> GetUserProjectsAsync(int userId, CancellationToken cancellationToken = default)
@@ -30,22 +36,29 @@ public class ProjectService(
             p.Id, p.Name, p.Description, p.Key, p.LeadId, p.CreatedAt, p.RowVersion));
     }
 
-    public async Task<ProjectDashboardResponseDto> CreateProjectAsync(
-    int userId,
-    CreateProjectDto dto,
-    CancellationToken cancellationToken = default)
+    public async Task<ProjectDashboardResponseDto> CreateProjectAsync(int userId, CreateProjectDto dto, CancellationToken cancellationToken = default)
     {
+        // 1. Create the Project
         if (await _projectRepository.ExistsByKeyAsync(dto.Key, cancellationToken))
             throw new InvalidOperationException($"A project with key '{dto.Key}' already exists.");
 
         var project = Project.Create(dto.Name, dto.Key, userId, userId);
-
         await _projectRepository.AddAsync(project, cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
+        // 2. Create the Backlog
         var backlogSprint = Sprint.CreateBacklog(project.Id);
-
         await _sprintRepository.AddAsync(backlogSprint, cancellationToken);
+
+        // 3. Add Creator as a Member (Calling AddMemberAsync)
+        var member = ProjectMember.Create(
+            projectId: project.Id,
+            userId: userId,
+            role: ProjectRole.Manager,
+            addedByUserId: userId);
+
+        await _projectMemberRepository.AddAsync(member, cancellationToken);
+
+        // 4. Save everything in one go
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return new ProjectDashboardResponseDto(
@@ -59,30 +72,52 @@ public class ProjectService(
     }
 
     // --- 2.3 Get Project Summary ---
-    public async Task<ProjectSummaryDto?> GetProjectSummaryAsync(int projectId, CancellationToken cancellationToken = default)
+    public async Task<ProjectSummaryDto?> GetProjectSummaryAsync(
+    int projectId,
+    CancellationToken cancellationToken = default)
     {
         var project = await _projectRepository.GetByIdAsync(projectId, cancellationToken);
-        if (project == null) return null;
+
+        if (project is null)
+            return null;
 
         var lead = await _userRepository.GetByIdAsync(project.LeadId, cancellationToken);
-        string leadName = lead?.Username ?? "Unknown Lead";
 
-        var mockActivities = new List<RecentActivityDto>
-        {
-            new(1, "Created the project backbone workspace structure", leadName, DateTime.UtcNow.AddDays(-2)),
-            new(2, "Initialized Kanban workflows board columns layout", leadName, DateTime.UtcNow.AddDays(-1))
-        };
+        var leadName = lead?.Username ?? "Unknown";
+
+        var sprints = await _sprintRepository.GetByProjectIdAsync(projectId, cancellationToken);
+
+        var issues = await _issueRepository.GetByProjectIdAsync(projectId, cancellationToken);
+
+        var history = await _historyRepository.GetByProjectIdAsync(projectId, 20, cancellationToken);
+
+        var activeSprintCount = sprints.Count(s => s.Status == SprintStatus.Active);
+
+        var totalIssues = issues.Count();
+
+        var doneIssues = issues.Count(i => i.Status == IssueStatus.Done);
+
+        var openIssues = totalIssues - doneIssues;
+
+        var recentActivities = history
+            .OrderByDescending(h => h.ChangedAt)
+            .Take(10)
+            .Select(h => new RecentActivityDto(
+                h.Id,
+                $"{h.Field} changed",
+                h.ChangedByUser.Username,
+                h.ChangedAt))
+            .ToList();
 
         return new ProjectSummaryDto(
             ProjectId: project.Id,
             Name: project.Name,
             OwnerName: leadName,
-            ActiveSprintCount: 1,
-            TotalIssuesCount: 12,
-            OpenIssuesCount: 8,
-            DoneIssuesCount: 4,
-            RecentActivities: mockActivities
-        );
+            ActiveSprintCount: activeSprintCount,
+            TotalIssuesCount: totalIssues,
+            OpenIssuesCount: openIssues,
+            DoneIssuesCount: doneIssues,
+            RecentActivities: recentActivities);
     }
 
     // --- 2.4 Get Project Timeline ---

@@ -50,6 +50,11 @@ public class IssueConfiguration : IEntityTypeConfiguration<Issue>
             .HasForeignKey(i => i.SprintId)
             .OnDelete(DeleteBehavior.SetNull);
 
+        builder.HasOne(i => i.Epic)
+            .WithMany(e => e.Issues)
+            .HasForeignKey(i => i.EpicId)
+            .OnDelete(DeleteBehavior.SetNull);
+
         builder.HasOne(i => i.Assignee)
             .WithMany()
             .HasForeignKey(i => i.AssigneeId)

@@ -33,8 +33,7 @@ public class Project
     // --- Relationships ---
     public ICollection<ProjectMember> ProjectMembers { get; set; } = [];
     public ICollection<Sprint> Sprints { get; set; } = [];
-
-    // OPTIONAL (enable only if you frequently load full project data)
+    public ICollection<Epic> Epics { get; set; } = [];
     public ICollection<Issue> Issues { get; set; } = [];
 
     // --- Factory ---

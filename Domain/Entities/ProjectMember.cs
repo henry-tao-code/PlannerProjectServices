@@ -24,16 +24,34 @@ public class ProjectMember
     public int? UpdatedByUserId { get; set; }
 
     // --- Domain behavior (recommended) ---
-    public void ChangeRole(ProjectRole newRole)
+    public static ProjectMember Create(
+    int projectId,
+    int userId,
+    ProjectRole role,
+    int? addedByUserId = null)
     {
-        Role = newRole;
-        UpdatedAt = DateTime.UtcNow;
+        return new ProjectMember
+        {
+            ProjectId = projectId,
+            UserId = userId,
+            Role = role,
+            JoinedAt = DateTime.UtcNow,
+            AddedByUserId = addedByUserId
+        };
     }
 
-    public void Remove()
+    public void ChangeRole(ProjectRole role, int? updatedByUserId = null)
+    {
+        Role = role;
+        UpdatedAt = DateTime.UtcNow;
+        UpdatedByUserId = updatedByUserId;
+    }
+
+    public void SoftDelete(int? updatedByUserId = null)
     {
         IsDeleted = true;
         UpdatedAt = DateTime.UtcNow;
+        UpdatedByUserId = updatedByUserId;
     }
 
     public void Restore()

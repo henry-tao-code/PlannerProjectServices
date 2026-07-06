@@ -8,8 +8,19 @@ public record UpdateIssueCoreDto(
     IssueType? Type,
     IssueStatus? Status,
     IssuePriority? Priority,
+
+    int? AssigneeId,
+    int? ReporterId,
+
+    int? SprintId,
+    int? ParentIssueId,
+
     int? StoryPoints,
+
     DateTime? StartDate,
     DateTime? DueDate,
+
+    List<string>? Labels,
+
     uint RowVersion
 );
