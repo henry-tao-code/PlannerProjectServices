@@ -59,6 +59,9 @@ public class Issue
     public ICollection<IssueHistory> History { get; } = [];
     public ICollection<IssueAttachment> Attachments { get; } = [];
 
+    public ICollection<IssueCommit> Commits { get; } = [];
+    public ICollection<IssuePullRequest> PullRequests { get; } = [];
+
     // ---------- Audit ----------
     public DateTime CreatedAt { get; init; }
     public DateTime UpdatedAt { get; private set; }
@@ -130,6 +133,12 @@ public class Issue
     public void SetReporter(int? userId)
     {
         ReporterId = userId;
+        Touch();
+    }
+
+    public void SetEpic(int? Id)
+    {
+        EpicId = Id;
         Touch();
     }
 

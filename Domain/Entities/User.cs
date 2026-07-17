@@ -12,6 +12,8 @@ public class User
     public string? AuthProvider { get; private set; }
     public string? AuthProviderId { get; private set; }
 
+    public GitHubConnection? GitHubConnection { get; private set; }
+
     public bool IsDeleted { get; private set; }
 
     public DateTime CreatedAt { get; init; }

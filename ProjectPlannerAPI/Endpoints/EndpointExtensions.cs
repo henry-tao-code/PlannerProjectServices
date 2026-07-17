@@ -6,12 +6,13 @@ public static class EndpointExtensions
 {
     public static IEndpointRouteBuilder MapAllApplicationEndpoints(this IEndpointRouteBuilder app)
     {
-        // Grouping all modular sub-routes under a single registration block
         app.MapUserEndpoints();
         app.MapProjectEndpoints();
         app.MapProjectMemberEndpoints();
+        app.MapEpicEndpoints();
         app.MapSprintEndpoints();
         app.MapIssueEndpoints();
+        app.MapDevelopmentEndpoints();
         app.MapCommentEndpoints();
         app.MapWorkLogEndpoints();
         app.MapHistoryEndpoints();

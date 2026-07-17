@@ -10,10 +10,15 @@ public class ProjectPlannerDbContext(DbContextOptions<ProjectPlannerDbContext> o
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<Project> Projects => Set<Project>();
     public DbSet<ProjectMember> ProjectMembers => Set<ProjectMember>();
-    public DbSet<Issue> Issues => Set<Issue>();
+    public DbSet<Epic> Epics => Set<Epic>();
     public DbSet<Sprint> Sprints => Set<Sprint>();
+    public DbSet<Issue> Issues => Set<Issue>();
     public DbSet<IssueComment> Comments => Set<IssueComment>();
     public DbSet<IssueHistory> History => Set<IssueHistory>();
+    public DbSet<GitHubConnection> GitHubConnections => Set<GitHubConnection>();
+    public DbSet<ProjectGitHubRepository> GitHubRepositories => Set<ProjectGitHubRepository>();
+    public DbSet<IssueCommit> IssueCommits => Set<IssueCommit>();
+    public DbSet<IssuePullRequest> IssuePullRequests => Set<IssuePullRequest>();
     public DbSet<WorkLog> WorkLogs => Set<WorkLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -21,6 +26,8 @@ public class ProjectPlannerDbContext(DbContextOptions<ProjectPlannerDbContext> o
         base.OnModelCreating(modelBuilder);
 
         modelBuilder.HasDefaultSchema("app");
+
+        modelBuilder.HasPostgresExtension("pg_trgm");
 
         modelBuilder.ApplyConfigurationsFromAssembly(
             typeof(ProjectPlannerDbContext).Assembly

@@ -41,13 +41,14 @@ services:
       KAFKA_LOG_DIRS: "/tmp/kafka-logs"
     volumes:
       - kafka-data:/var/lib/kafka/data
+    mem_limit: 2g
     restart: unless-stopped
 
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
     container_name: kafka-ui
     ports:
-      - "8081:8081" # Change host port if 8080 conflicts with other local web apps
+      - "8081:8081"
     environment:
       - KAFKA_CLUSTERS_0_NAME=local
       - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:29092

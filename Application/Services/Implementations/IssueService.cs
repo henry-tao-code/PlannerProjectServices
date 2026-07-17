@@ -6,8 +6,9 @@ namespace ProjectPlanner.Application.Services.Implementations;
 
 public class IssueService(
     IIssueRepository issueRepository,
-    ISprintRepository sprintRepository,
     IProjectRepository projectRepository,
+    IEpicRepository epicRepository,
+    ISprintRepository sprintRepository,
     IUserRepository userRepository,
     IUnitOfWork unitOfWork,
     IUserContext userContext) : IIssueService
@@ -68,6 +69,31 @@ public class IssueService(
             i.Id,
             i.IssueKey,
             i.Title,
+            i.Epic?.Name,
+            i.Status,
+            i.Priority,
+            i.Assignee?.Username,
+            i.StoryPoints
+        ));
+    }
+
+    public async Task<IEnumerable<IssueSummaryDto>> SearchIssuesAsync(
+    int projectId,
+    string searchTerm,
+    CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(searchTerm))
+        {
+            return [];
+        }
+
+        var issues = await issueRepository.FuzzySearchIssuesAsync(projectId, searchTerm, ct);
+
+        return issues.Select(i => new IssueSummaryDto(
+            i.Id,
+            i.IssueKey,
+            i.Title,
+            i.Epic?.Name,
             i.Status,
             i.Priority,
             i.Assignee?.Username,
@@ -113,6 +139,7 @@ public class IssueService(
         issue.SetReporter(dto.ReporterId);
 
         // Sprint / Parent
+        issue.SetEpic(dto.EpicId);
         issue.MoveToSprint(dto.SprintId, userId);
         issue.SetParent(dto.ParentIssueId);
 
@@ -250,6 +277,7 @@ public class IssueService(
     {
         var assignee = await GetUsernameAsync(issue.AssigneeId, ct);
         var reporter = await GetUsernameAsync(issue.ReporterId, ct);
+        var epic = await (GetEpicName(issue.EpicId, ct));
 
         return new IssueDetailDto
         {
@@ -263,10 +291,14 @@ public class IssueService(
             Priority = issue.Priority,
 
             ProjectId = issue.ProjectId,
+            EpicId = issue.EpicId,
+            EpicName = epic,
             SprintId = issue.SprintId,
 
             AssigneeId = issue.AssigneeId,
+            AssigneeName = assignee,
             ReporterId = issue.ReporterId,
+            ReporterName = reporter,
 
             StartDate = issue.StartDate,
             DueDate = issue.DueDate,
@@ -282,7 +314,7 @@ public class IssueService(
                 TimeRemainingMinutes = issue.TimeTracking.TimeRemainingMinutes
             },
 
-            Labels = issue.Labels.Select(l => l.Value).ToList(),
+            Labels = [.. issue.Labels.Select(l => l.Value)],
 
             Comments = [],
             History = [],
@@ -300,5 +332,13 @@ public class IssueService(
 
         var user = await userRepository.GetByIdAsync(userId.Value, ct);
         return user?.Username;
+    }
+
+    private async Task<string?> GetEpicName(int? epicId, CancellationToken ct)
+    {
+        if (!epicId.HasValue) return null;
+
+        var epic = await epicRepository.GetByIdAsync(epicId.Value, ct);
+        return epic?.Name;
     }
 }

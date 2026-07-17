@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using ProjectPlanner.Infrastructure.Persistence;
@@ -11,9 +12,11 @@ using ProjectPlanner.Infrastructure.Persistence;
 namespace ProjectPlanner.Infrastructure.Migrations
 {
     [DbContext(typeof(ProjectPlannerDbContext))]
-    partial class ProjectPlannerDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260711140238_DevelopmentAdded")]
+    partial class DevelopmentAdded
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,7 +24,6 @@ namespace ProjectPlanner.Infrastructure.Migrations
                 .HasAnnotation("ProductVersion", "10.0.8")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
-            NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "pg_trgm");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
             modelBuilder.Entity("Domain.Entities.Epic", b =>
@@ -229,11 +231,6 @@ namespace ProjectPlanner.Infrastructure.Migrations
                     b.HasIndex("SprintId");
 
                     b.HasIndex("Status");
-
-                    b.HasIndex("Title");
-
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Title"), "gin");
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("Title"), new[] { "gin_trgm_ops" });
 
                     b.ToTable("Issues", "app");
                 });

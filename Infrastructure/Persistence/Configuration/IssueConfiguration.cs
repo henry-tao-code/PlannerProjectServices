@@ -82,5 +82,9 @@ public class IssueConfiguration : IEntityTypeConfiguration<Issue>
         builder.HasIndex(i => i.SprintId);
         builder.HasIndex(i => i.Status);
         builder.HasIndex(i => i.Priority);
+
+        builder.HasIndex(i => i.Title)
+            .HasMethod("gin")
+            .HasOperators("gin_trgm_ops");
     }
 }

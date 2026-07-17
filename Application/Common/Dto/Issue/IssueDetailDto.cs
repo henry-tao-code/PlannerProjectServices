@@ -18,6 +18,10 @@ public class IssueDetailDto
     public IssuePriority Priority { get; set; }
 
     public int ProjectId { get; set; }
+
+    public int? EpicId { get; set; }
+    public string? EpicName { get; set; }
+
     public int? SprintId { get; set; }
 
     public int? AssigneeId { get; set; }

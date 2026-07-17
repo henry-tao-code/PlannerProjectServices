@@ -6,4 +6,4 @@ public record ProjectDevelopmentDto(
     int ProjectId,
     int LinkedRepositoryCount,
     IEnumerable<BranchDto> ActiveBranches,
-    IEnumerable<PullRequestDto> OpenPullRequests);
+    IEnumerable<IssuePullRequestDto> OpenPullRequests);

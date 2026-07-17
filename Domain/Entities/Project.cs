@@ -4,39 +4,30 @@ public class Project
 {
     public int Id { get; init; }
 
-    // --- Identity ---
     public string Name { get; set; } = null!;
     public string Key { get; set; } = null!;
     public string? Description { get; set; }
-
-    // Optional but very useful for URLs / routing
     public string Slug { get; set; } = null!;
 
-    // --- Ownership ---
     public int LeadId { get; set; }
     public User Lead { get; set; } = null!;
 
-    // --- Lifecycle ---
     public bool IsArchived { get; set; }
     public bool IsDeleted { get; set; }
 
-    // --- Audit ---
     public DateTime CreatedAt { get; init; }
     public DateTime UpdatedAt { get; set; }
 
     public int CreatedByUserId { get; set; }
     public int? UpdatedByUserId { get; set; }
-
-    // --- Concurrency ---
     public uint RowVersion { get; set; }
 
-    // --- Relationships ---
     public ICollection<ProjectMember> ProjectMembers { get; set; } = [];
     public ICollection<Sprint> Sprints { get; set; } = [];
     public ICollection<Epic> Epics { get; set; } = [];
     public ICollection<Issue> Issues { get; set; } = [];
+    public ProjectGitHubRepository? GitHubRepository { get; private set; }
 
-    // --- Factory ---
     public static Project Create(string name, string key, int leadId, int createdByUserId, string? description = null)
     {
         if (string.IsNullOrWhiteSpace(name))

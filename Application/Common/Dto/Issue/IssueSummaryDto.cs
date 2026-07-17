@@ -6,6 +6,7 @@ public record IssueSummaryDto(
     int Id,
     string IssueKey,
     string Title,
+    string? EpicName,
     IssueStatus Status,
     IssuePriority Priority,
     string? AssigneeName,

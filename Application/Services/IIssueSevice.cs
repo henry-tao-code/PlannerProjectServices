@@ -7,6 +7,7 @@ public interface IIssueService
     // ---------------- READ ----------------
     Task<IssueDetailDto?> GetByIdAsync(int id, CancellationToken ct = default);
     Task<IEnumerable<IssueSummaryDto>> GetByProjectAsync(int projectId, CancellationToken ct = default);
+    Task<IEnumerable<IssueSummaryDto>> SearchIssuesAsync(int projectId, string searchTerm, CancellationToken ct = default);
 
     // ---------------- CREATE ----------------
     Task<IssueDetailDto> CreateAsync(IssueCreateDto dto, CancellationToken ct = default);

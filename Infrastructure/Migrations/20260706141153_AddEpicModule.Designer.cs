@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using ProjectPlanner.Infrastructure.Persistence;
@@ -11,9 +12,11 @@ using ProjectPlanner.Infrastructure.Persistence;
 namespace ProjectPlanner.Infrastructure.Migrations
 {
     [DbContext(typeof(ProjectPlannerDbContext))]
-    partial class ProjectPlannerDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260706141153_AddEpicModule")]
+    partial class AddEpicModule
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,7 +24,6 @@ namespace ProjectPlanner.Infrastructure.Migrations
                 .HasAnnotation("ProductVersion", "10.0.8")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
-            NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "pg_trgm");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
             modelBuilder.Entity("Domain.Entities.Epic", b =>
@@ -89,44 +91,6 @@ namespace ProjectPlanner.Infrastructure.Migrations
                     b.HasIndex("ProjectId", "Status");
 
                     b.ToTable("Epics", "app");
-                });
-
-            modelBuilder.Entity("Domain.Entities.GitHubConnection", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("AccessToken")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<DateTime>("ConnectedAt")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.Property<long>("GithubUserId")
-                        .HasColumnType("bigint");
-
-                    b.Property<string>("GithubUsername")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("GithubUserId")
-                        .IsUnique();
-
-                    b.HasIndex("UserId")
-                        .IsUnique();
-
-                    b.ToTable("GitHubConnections", "app");
                 });
 
             modelBuilder.Entity("Domain.Entities.Issue", b =>
@@ -230,56 +194,7 @@ namespace ProjectPlanner.Infrastructure.Migrations
 
                     b.HasIndex("Status");
 
-                    b.HasIndex("Title");
-
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Title"), "gin");
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("Title"), new[] { "gin_trgm_ops" });
-
                     b.ToTable("Issues", "app");
-                });
-
-            modelBuilder.Entity("Domain.Entities.IssueCommit", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Author")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<DateTime>("CommittedAt")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.Property<int>("IssueId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Message")
-                        .IsRequired()
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
-
-                    b.Property<string>("Sha")
-                        .IsRequired()
-                        .HasMaxLength(40)
-                        .HasColumnType("character varying(40)");
-
-                    b.Property<string>("Url")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("IssueId");
-
-                    b.HasIndex("Sha")
-                        .IsUnique();
-
-                    b.ToTable("IssueCommits", "app");
                 });
 
             modelBuilder.Entity("Domain.Entities.IssueHistory", b =>
@@ -319,51 +234,6 @@ namespace ProjectPlanner.Infrastructure.Migrations
                     b.HasIndex("IssueId", "ChangedAt");
 
                     b.ToTable("IssueHistories", "app");
-                });
-
-            modelBuilder.Entity("Domain.Entities.IssuePullRequest", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<long>("GithubPullRequestId")
-                        .HasColumnType("bigint");
-
-                    b.Property<int>("IssueId")
-                        .HasColumnType("integer");
-
-                    b.Property<bool>("Merged")
-                        .HasColumnType("boolean");
-
-                    b.Property<int>("Number")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("State")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("character varying(30)");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(300)
-                        .HasColumnType("character varying(300)");
-
-                    b.Property<string>("Url")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("GithubPullRequestId")
-                        .IsUnique();
-
-                    b.HasIndex("IssueId");
-
-                    b.ToTable("IssuePullRequests", "app");
                 });
 
             modelBuilder.Entity("Domain.Entities.Project", b =>
@@ -430,48 +300,6 @@ namespace ProjectPlanner.Infrastructure.Migrations
                         .HasDatabaseName("IX_Projects_LeadId");
 
                     b.ToTable("Projects", "app");
-                });
-
-            modelBuilder.Entity("Domain.Entities.ProjectGitHubRepository", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("ConnectedAt")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.Property<string>("DefaultBranch")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasDefaultValue("main");
-
-                    b.Property<long>("GithubRepositoryId")
-                        .HasColumnType("bigint");
-
-                    b.Property<string>("Owner")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<int>("ProjectId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Repository")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ProjectId")
-                        .IsUnique();
-
-                    b.ToTable("ProjectGitHubRepositories", "app");
                 });
 
             modelBuilder.Entity("Domain.Entities.ProjectMember", b =>
@@ -883,17 +711,6 @@ namespace ProjectPlanner.Infrastructure.Migrations
                     b.Navigation("Project");
                 });
 
-            modelBuilder.Entity("Domain.Entities.GitHubConnection", b =>
-                {
-                    b.HasOne("Domain.Entities.User", "User")
-                        .WithOne("GitHubConnection")
-                        .HasForeignKey("Domain.Entities.GitHubConnection", "UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("Domain.Entities.Issue", b =>
                 {
                     b.HasOne("Domain.Entities.User", "Assignee")
@@ -964,17 +781,6 @@ namespace ProjectPlanner.Infrastructure.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Domain.Entities.IssueCommit", b =>
-                {
-                    b.HasOne("Domain.Entities.Issue", "Issue")
-                        .WithMany("Commits")
-                        .HasForeignKey("IssueId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Issue");
-                });
-
             modelBuilder.Entity("Domain.Entities.IssueHistory", b =>
                 {
                     b.HasOne("Domain.Entities.User", "ChangedByUser")
@@ -994,17 +800,6 @@ namespace ProjectPlanner.Infrastructure.Migrations
                     b.Navigation("Issue");
                 });
 
-            modelBuilder.Entity("Domain.Entities.IssuePullRequest", b =>
-                {
-                    b.HasOne("Domain.Entities.Issue", "Issue")
-                        .WithMany("PullRequests")
-                        .HasForeignKey("IssueId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Issue");
-                });
-
             modelBuilder.Entity("Domain.Entities.Project", b =>
                 {
                     b.HasOne("Domain.Entities.User", "Lead")
@@ -1014,17 +809,6 @@ namespace ProjectPlanner.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Lead");
-                });
-
-            modelBuilder.Entity("Domain.Entities.ProjectGitHubRepository", b =>
-                {
-                    b.HasOne("Domain.Entities.Project", "Project")
-                        .WithOne("GitHubRepository")
-                        .HasForeignKey("Domain.Entities.ProjectGitHubRepository", "ProjectId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Project");
                 });
 
             modelBuilder.Entity("Domain.Entities.ProjectMember", b =>
@@ -1166,8 +950,6 @@ namespace ProjectPlanner.Infrastructure.Migrations
 
                     b.Navigation("Comments");
 
-                    b.Navigation("Commits");
-
                     b.Navigation("History");
 
                     b.Navigation("IncomingLinks");
@@ -1176,16 +958,12 @@ namespace ProjectPlanner.Infrastructure.Migrations
 
                     b.Navigation("OutgoingLinks");
 
-                    b.Navigation("PullRequests");
-
                     b.Navigation("SubIssues");
                 });
 
             modelBuilder.Entity("Domain.Entities.Project", b =>
                 {
                     b.Navigation("Epics");
-
-                    b.Navigation("GitHubRepository");
 
                     b.Navigation("Issues");
 
@@ -1201,8 +979,6 @@ namespace ProjectPlanner.Infrastructure.Migrations
 
             modelBuilder.Entity("Domain.Entities.User", b =>
                 {
-                    b.Navigation("GitHubConnection");
-
                     b.Navigation("ProjectMemberships");
                 });
 #pragma warning restore 612, 618

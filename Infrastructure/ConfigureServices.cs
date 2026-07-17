@@ -36,10 +36,12 @@ public static class ConfigureServices
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IProjectRepository, ProjectRepository>();
         services.AddScoped<IProjectMemberRepository, ProjectMemberRepository>();
+        services.AddScoped<IEpicRepository, EpicRepository>();
         services.AddScoped<ISprintRepository, SprintRepository>();
         services.AddScoped<IIssueRepository, IssueRepository>();
         services.AddScoped<ICommentRepository, CommentRepository>();
         services.AddScoped<IHistoryRepository, HistoryRepository>();
+        services.AddScoped<IDevelopmentRepository, DevelopmentRepository>();
         services.AddScoped<IWorkLogRepository, WorkLogRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 

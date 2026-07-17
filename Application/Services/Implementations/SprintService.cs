@@ -149,10 +149,12 @@ public class SprintService(
 
     private static SprintDto MapToDto(Sprint sprint)
     {
+
         var issueDtos = sprint.Issues.Select(i => new IssueSummaryDto(
             i.Id,
             i.IssueKey,
             i.Title,
+            i.Epic?.Name,
             i.Status,
             i.Priority,
             i.Assignee?.Username,

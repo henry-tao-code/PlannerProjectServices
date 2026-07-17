@@ -12,6 +12,7 @@ public record UpdateIssueCoreDto(
     int? AssigneeId,
     int? ReporterId,
 
+    int? EpicId,
     int? SprintId,
     int? ParentIssueId,
 

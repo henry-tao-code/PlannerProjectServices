@@ -212,19 +212,10 @@ public class ProjectService(
 
         var branches = new List<BranchDto>
         {
-            new("feature/auth-context-wrapper", "a1b2c3d", "Developer Alex", DateTime.UtcNow.AddHours(-3))
         };
 
-        var pullRequests = new List<PullRequestDto>
+        var pullRequests = new List<IssuePullRequestDto>
         {
-            new(
-                401,
-                "PR: Implement central validation token interception pipeline",
-                "https://github.com/example/repo/pull/401",
-                PullRequestStatus.Open,
-                "feature/auth-context-wrapper",
-                "main"
-            )
         };
 
         return new ProjectDevelopmentDto(projectId, 1, branches, pullRequests);

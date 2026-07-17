@@ -1,4 +1,6 @@
-﻿using ProjectPlanner.Application.Common.Dto.Issue;
+﻿using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
+using ProjectPlanner.Application.Common.Dto.Issue;
 using ProjectPlanner.Application.Services;
 
 namespace ProjectPlanner.Api.Endpoints;
@@ -13,6 +15,7 @@ public static class IssueEndpoints
         group.MapPost("/", CreateIssueAsync);
         group.MapGet("/{id:int}", GetIssueByIdAsync);
         group.MapGet("/project/{projectId:int}", GetIssuesByProjectIdAsync);
+        group.MapGet("/projects/{projectId:int}/issues/search", SearchProjectIssuesAsync);
         group.MapPut("/{id:int}", UpdateIssueAsync);
         group.MapPost("/{id:int}/move", MoveIssueAsync);
         group.MapDelete("/{id:int}", DeleteIssueAsync);
@@ -51,6 +54,22 @@ public static class IssueEndpoints
     {
         var issues = await issueService.GetByProjectAsync(projectId, cancellationToken);
         return Results.Ok(issues);
+    }
+
+    private static async Task<Results<Ok<IEnumerable<IssueSummaryDto>>, BadRequest<string>>> SearchProjectIssuesAsync(
+        int projectId,
+        [FromQuery] string? query,
+        IIssueService issueService,
+        CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            return TypedResults.BadRequest("Search query parameter cannot be empty.");
+        }
+
+        var results = await issueService.SearchIssuesAsync(projectId, query, ct);
+
+        return TypedResults.Ok(results);
     }
 
     private static async Task<IResult> UpdateIssueAsync(
