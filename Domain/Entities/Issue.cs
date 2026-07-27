@@ -5,19 +5,13 @@ namespace Domain.Entities;
 public class Issue
 {
     public int Id { get; init; }
-
-    // ---------- Identity ----------
     public string IssueKey { get; private set; } = null!;
-
-    // ---------- Core ----------
     public string Title { get; private set; } = null!;
     public string? Description { get; private set; }
 
     public IssueType IssueType { get; private set; }
     public IssueStatus Status { get; private set; }
     public IssuePriority Priority { get; private set; }
-
-    // ---------- Relationships ----------
     public int ProjectId { get; private set; }
     public Project Project { get; private set; } = null!;
 
@@ -33,27 +27,22 @@ public class Issue
     public int? ReporterId { get; private set; }
     public User? Reporter { get; private set; }
 
-    // ---------- Hierarchy ----------
     public int? ParentIssueId { get; private set; }
     public Issue? ParentIssue { get; private set; }
 
     public ICollection<Issue> SubIssues { get; } = [];
 
-    // ---------- Links ----------
     public ICollection<IssueLink> OutgoingLinks { get; } = [];
     public ICollection<IssueLink> IncomingLinks { get; } = [];
 
-    // ---------- Scheduling ----------
     public DateTime? StartDate { get; private set; }
     public DateTime? DueDate { get; private set; }
     public DateTime? CompletedAt { get; private set; }
 
-    // ---------- Estimation ----------
     public int StoryPoints { get; private set; } = 0;
 
     public IssueTimeTracking TimeTracking { get; private set; } = new();
 
-    // ---------- Child Collections ----------
     public ICollection<IssueLabel> Labels { get; } = [];
     public ICollection<IssueComment> Comments { get; } = [];
     public ICollection<IssueHistory> History { get; } = [];
@@ -62,7 +51,6 @@ public class Issue
     public ICollection<IssueCommit> Commits { get; } = [];
     public ICollection<IssuePullRequest> PullRequests { get; } = [];
 
-    // ---------- Audit ----------
     public DateTime CreatedAt { get; init; }
     public DateTime UpdatedAt { get; private set; }
 

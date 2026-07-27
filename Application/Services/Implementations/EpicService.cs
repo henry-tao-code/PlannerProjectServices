@@ -1,4 +1,5 @@
 ﻿using Domain.Entities;
+using Domain.Enums;
 using ProjectPlanner.Application.Common.Dto.Epic;
 using ProjectPlanner.Application.Common.Interfaces.Persistence;
 
@@ -8,20 +9,18 @@ public class EpicService(
     IEpicRepository epicRepository,
     IProjectRepository projectRepository,
     IUserRepository userRepository,
+    ISearchIndexService searchIndexService,
     IUnitOfWork unitOfWork) : IEpicService
 {
     public async Task<EpicDto> CreateAsync(CreateEpicDto dto, CancellationToken cancellationToken = default)
     {
-        // 1. Validate that the target project exists
         if (!await projectRepository.ExistsAsync(dto.ProjectId, cancellationToken))
             throw new KeyNotFoundException($"Project with ID {dto.ProjectId} was not found.");
 
-        // 2. Resolve assignee username early if an assignee is provided
         var assigneeUsername = await GetUsernameAsync(dto.AssigneeId, cancellationToken);
 
-        // 3. Instantiate the Epic using its DDD domain factory method (encapsulates validation)
         var epic = Epic.Create(
-            dto.Name,
+            dto.Title,
             dto.Summary,
             dto.ProjectId,
             dto.Description,
@@ -32,6 +31,8 @@ public class EpicService(
 
         await epicRepository.AddAsync(epic, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        await searchIndexService.IndexEpicAsync(epic.Id, cancellationToken);
 
         return MapToDto(epic, assigneeUsername);
     }
@@ -65,7 +66,7 @@ public class EpicService(
 
         return epics.Select(e => new EpicSummaryDto(
             e.Id,
-            e.Name,
+            e.Title,
             e.Summary,
             e.Status,
             e.Assignee?.Username,
@@ -78,11 +79,9 @@ public class EpicService(
         var epic = await epicRepository.GetByIdAsync(id, cancellationToken)
             ?? throw new KeyNotFoundException($"Epic with ID {id} was not found.");
 
-        // Optimistic Concurrency Check
         if (epic.RowVersion != dto.RowVersion)
             throw new InvalidOperationException("The record was modified by another request. Refresh your data.");
 
-        // Execute self-contained DDD methods on the entity
         epic.UpdateDetails(dto.Name, dto.Summary, dto.Description);
         epic.UpdateTimeline(dto.StartDate, dto.DueDate);
         epic.UpdateStatus(dto.Status);
@@ -93,6 +92,8 @@ public class EpicService(
 
         var assigneeUsername = await GetUsernameAsync(epic.AssigneeId, cancellationToken);
 
+        await searchIndexService.IndexEpicAsync(epic.Id, cancellationToken);
+
         return MapToDto(epic, assigneeUsername);
     }
 
@@ -101,11 +102,11 @@ public class EpicService(
         var epic = await epicRepository.GetByIdAsync(id, cancellationToken);
         if (epic == null) return false;
 
-        // Execute soft delete behavior on domain layer instead of context.Remove()
         epic.Delete();
 
         epicRepository.Update(epic);
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        await searchIndexService.RemoveAsync(SearchEntityType.Epic, epic.Id, cancellationToken);
 
         return true;
     }
@@ -123,7 +124,7 @@ public class EpicService(
     {
         return new EpicDto(
             epic.Id,
-            epic.Name,
+            epic.Title,
             epic.Summary,
             epic.Description,
             epic.Status,

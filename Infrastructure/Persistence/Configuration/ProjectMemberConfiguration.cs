@@ -11,19 +11,14 @@ public class ProjectMemberConfiguration : IEntityTypeConfiguration<ProjectMember
     {
         builder.ToTable("ProjectMembers");
 
-        // ---------------- Composite Key ----------------
         builder.HasKey(pm => new { pm.ProjectId, pm.UserId });
 
-        // ---------------- Soft Delete ----------------
         builder.HasQueryFilter(pm => !pm.IsDeleted);
 
-        // ---------------- Role (INT ENUM) ----------------
         builder.Property(pm => pm.Role)
             .IsRequired()
-            .HasConversion<int>() // IMPORTANT: int mapping
+            .HasConversion<int>()
             .HasDefaultValue(ProjectRole.Viewer);
-
-        // ---------------- Relationships ----------------
 
         builder.HasOne(pm => pm.Project)
             .WithMany(p => p.ProjectMembers)
@@ -35,7 +30,6 @@ public class ProjectMemberConfiguration : IEntityTypeConfiguration<ProjectMember
             .HasForeignKey(pm => pm.UserId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // ---------------- Audit ----------------
         builder.Property(pm => pm.JoinedAt)
             .IsRequired();
 

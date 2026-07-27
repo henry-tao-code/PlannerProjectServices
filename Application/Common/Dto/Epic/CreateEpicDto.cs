@@ -1,7 +1,7 @@
 ﻿namespace ProjectPlanner.Application.Common.Dto.Epic;
 
 public record CreateEpicDto(
-    string Name,
+    string Title,
     string Summary,
     string? Description,
     int ProjectId,

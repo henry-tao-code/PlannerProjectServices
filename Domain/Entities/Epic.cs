@@ -5,7 +5,7 @@ namespace Domain.Entities;
 public class Epic
 {
     public int Id { get; private set; }
-    public string Name { get; private set; } = null!;
+    public string Title { get; private set; } = null!;
     public string Summary { get; private set; } = null!;
     public string? Description { get; private set; }
     public EpicStatus Status { get; private set; } = EpicStatus.ToDo;
@@ -22,7 +22,7 @@ public class Epic
     public uint RowVersion { get; private set; }
 
     public static Epic Create(
-        string name,
+        string title,
         string summary,
         int projectId,
         string? description = null,
@@ -30,8 +30,8 @@ public class Epic
         DateTime? startDate = null,
         DateTime? dueDate = null)
     {
-        if (string.IsNullOrWhiteSpace(name))
-            throw new ArgumentException("Epic name cannot be empty.", nameof(name));
+        if (string.IsNullOrWhiteSpace(title))
+            throw new ArgumentException("Epic title cannot be empty.", nameof(title));
 
         if (string.IsNullOrWhiteSpace(summary))
             throw new ArgumentException("Epic summary cannot be empty.", nameof(summary));
@@ -41,7 +41,7 @@ public class Epic
 
         return new Epic
         {
-            Name = name,
+            Title = title,
             Summary = summary,
             Description = description,
             ProjectId = projectId,
@@ -55,15 +55,15 @@ public class Epic
         };
     }
 
-    public void UpdateDetails(string name, string summary, string? description)
+    public void UpdateDetails(string title, string summary, string? description)
     {
-        if (string.IsNullOrWhiteSpace(name))
-            throw new ArgumentException("Epic name cannot be empty.", nameof(name));
+        if (string.IsNullOrWhiteSpace(title))
+            throw new ArgumentException("Epic title cannot be empty.", nameof(title));
 
         if (string.IsNullOrWhiteSpace(summary))
             throw new ArgumentException("Epic summary cannot be empty.", nameof(summary));
 
-        Name = name;
+        Title = title;
         Summary = summary;
         Description = description;
         UpdatedAt = DateTime.UtcNow;

@@ -20,14 +20,13 @@ public class ProjectPlannerDbContext(DbContextOptions<ProjectPlannerDbContext> o
     public DbSet<IssueCommit> IssueCommits => Set<IssueCommit>();
     public DbSet<IssuePullRequest> IssuePullRequests => Set<IssuePullRequest>();
     public DbSet<WorkLog> WorkLogs => Set<WorkLog>();
+    public DbSet<SearchDocument> SearchDocuments => Set<SearchDocument>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
         modelBuilder.HasDefaultSchema("app");
-
-        modelBuilder.HasPostgresExtension("pg_trgm");
 
         modelBuilder.ApplyConfigurationsFromAssembly(
             typeof(ProjectPlannerDbContext).Assembly
@@ -41,5 +40,7 @@ public class ProjectPlannerDbContext(DbContextOptions<ProjectPlannerDbContext> o
 
         modelBuilder.Entity<Sprint>()
             .HasQueryFilter(s => !s.IsDeleted);
+
+        modelBuilder.HasPostgresExtension("pg_trgm");
     }
 }

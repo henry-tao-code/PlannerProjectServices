@@ -1,8 +1,10 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
+using OpenAI;
 using ProjectPlanner.Application.Common.Interfaces.Persistence;
 using ProjectPlanner.Application.Common.Interfaces.Security;
 using ProjectPlanner.Application.Services;
@@ -10,6 +12,7 @@ using ProjectPlanner.Application.Services.Implementations;
 using ProjectPlanner.Infrastructure.Persistence;
 using ProjectPlanner.Infrastructure.Persistence.Repositories;
 using ProjectPlanner.Infrastructure.Security;
+using System.ClientModel;
 using System.Text;
 
 namespace ProjectPlanner.Infrastructure;
@@ -43,6 +46,8 @@ public static class ConfigureServices
         services.AddScoped<IHistoryRepository, HistoryRepository>();
         services.AddScoped<IDevelopmentRepository, DevelopmentRepository>();
         services.AddScoped<IWorkLogRepository, WorkLogRepository>();
+        services.AddScoped<ISearchQueryRepository, SearchQueryRepository>();
+        services.AddScoped<ISearchIndexRepository, SearchIndexRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
         return services;
@@ -89,6 +94,26 @@ public static class ConfigureServices
 
         services.AddAuthorization();
 
+        return services;
+    }
+
+    public static IServiceCollection AddAiServices(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        services.AddSingleton<IChatClient>(sp =>
+        {
+            var client = new OpenAIClient(
+                credential: new ApiKeyCredential(configuration["AiGateway:MasterKey"]!),
+                options: new OpenAIClientOptions
+                {
+                    Endpoint = new Uri(configuration["AiGateway:BaseUrl"]!)
+                });
+
+            return client
+                .GetChatClient("planner-smart-model")
+                .AsIChatClient();
+        });
         return services;
     }
 }

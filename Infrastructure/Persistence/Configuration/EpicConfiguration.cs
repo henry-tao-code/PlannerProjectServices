@@ -17,7 +17,7 @@ public class EpicConfiguration : IEntityTypeConfiguration<Epic>
         builder.HasQueryFilter(e => !e.IsDeleted);
 
         // Properties
-        builder.Property(e => e.Name)
+        builder.Property(e => e.Title)
             .IsRequired()
             .HasMaxLength(100);
 
@@ -60,6 +60,6 @@ public class EpicConfiguration : IEntityTypeConfiguration<Epic>
 
         builder.HasIndex(e => new { e.ProjectId, e.Status });
 
-        builder.HasIndex(e => e.Name);
+        builder.HasIndex(e => e.Title);
     }
 }

@@ -20,46 +20,36 @@ public class ProjectService(
     IHistoryRepository historyRepository,
     IUnitOfWork unitOfWork) : IProjectService
 {
-    private readonly IUserRepository _userRepository = userRepository;
-    private readonly IProjectRepository _projectRepository = projectRepository;
-    private readonly IProjectMemberRepository _projectMemberRepository = projectMemberRepository;
-    private readonly ISprintRepository _sprintRepository = sprintRepository;
-    private readonly IIssueRepository _issueRepository = issueRepository;
-    private readonly IHistoryRepository _historyRepository = historyRepository;
-    private readonly IUnitOfWork _unitOfWork = unitOfWork;
-
-    public async Task<IEnumerable<ProjectDashboardResponseDto>> GetUserProjectsAsync(int userId, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<ProjectDashboardResponseDto>> GetUserProjectsAsync(int userId, CancellationToken ct = default)
     {
-        var projects = await _projectRepository.GetProjectsByUserIdAsync(userId, cancellationToken);
+        var projects = await projectRepository.GetProjectsByUserIdAsync(userId, ct);
 
         return projects.Select(p => new ProjectDashboardResponseDto(
             p.Id, p.Name, p.Description, p.Key, p.LeadId, p.CreatedAt, p.RowVersion));
     }
 
-    public async Task<ProjectDashboardResponseDto> CreateProjectAsync(int userId, CreateProjectDto dto, CancellationToken cancellationToken = default)
+    public async Task<ProjectDashboardResponseDto> CreateProjectAsync(int userId, CreateProjectDto dto, CancellationToken ct = default)
     {
-        // 1. Create the Project
-        if (await _projectRepository.ExistsByKeyAsync(dto.Key, cancellationToken))
+        if (await projectRepository.ExistsByKeyAsync(dto.Key, ct))
             throw new InvalidOperationException($"A project with key '{dto.Key}' already exists.");
 
         var project = Project.Create(dto.Name, dto.Key, userId, userId);
-        await _projectRepository.AddAsync(project, cancellationToken);
+        await projectRepository.AddAsync(project, ct);
 
-        // 2. Create the Backlog
+        await unitOfWork.SaveChangesAsync(ct);
+
         var backlogSprint = Sprint.CreateBacklog(project.Id);
-        await _sprintRepository.AddAsync(backlogSprint, cancellationToken);
+        await sprintRepository.AddAsync(backlogSprint, ct);
 
-        // 3. Add Creator as a Member (Calling AddMemberAsync)
         var member = ProjectMember.Create(
             projectId: project.Id,
             userId: userId,
             role: ProjectRole.Manager,
             addedByUserId: userId);
 
-        await _projectMemberRepository.AddAsync(member, cancellationToken);
+        await projectMemberRepository.AddAsync(member, ct);
 
-        // 4. Save everything in one go
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        await unitOfWork.SaveChangesAsync(ct);
 
         return new ProjectDashboardResponseDto(
             project.Id,
@@ -71,25 +61,24 @@ public class ProjectService(
             project.RowVersion);
     }
 
-    // --- 2.3 Get Project Summary ---
     public async Task<ProjectSummaryDto?> GetProjectSummaryAsync(
     int projectId,
-    CancellationToken cancellationToken = default)
+    CancellationToken ct = default)
     {
-        var project = await _projectRepository.GetByIdAsync(projectId, cancellationToken);
+        var project = await projectRepository.GetByIdAsync(projectId, ct);
 
         if (project is null)
             return null;
 
-        var lead = await _userRepository.GetByIdAsync(project.LeadId, cancellationToken);
+        var lead = await userRepository.GetByIdAsync(project.LeadId, ct);
 
         var leadName = lead?.Username ?? "Unknown";
 
-        var sprints = await _sprintRepository.GetByProjectIdAsync(projectId, cancellationToken);
+        var sprints = await sprintRepository.GetByProjectIdAsync(projectId, ct);
 
-        var issues = await _issueRepository.GetByProjectIdAsync(projectId, cancellationToken);
+        var issues = await issueRepository.GetByProjectIdAsync(projectId, ct);
 
-        var history = await _historyRepository.GetByProjectIdAsync(projectId, 20, cancellationToken);
+        var history = await historyRepository.GetByProjectIdAsync(projectId, 20, ct);
 
         var activeSprintCount = sprints.Count(s => s.Status == SprintStatus.Active);
 
@@ -120,10 +109,9 @@ public class ProjectService(
             RecentActivities: recentActivities);
     }
 
-    // --- 2.4 Get Project Timeline ---
-    public async Task<ProjectTimelineDto?> GetProjectTimelineAsync(int projectId, CancellationToken cancellationToken = default)
+    public async Task<ProjectTimelineDto?> GetProjectTimelineAsync(int projectId, CancellationToken ct = default)
     {
-        if (!await _projectRepository.ExistsAsync(projectId, cancellationToken)) return null;
+        if (!await projectRepository.ExistsAsync(projectId, ct)) return null;
 
         var mockSprints = new List<TimelineItemDto>
         {
@@ -139,10 +127,9 @@ public class ProjectService(
         return new ProjectTimelineDto(projectId, mockSprints, mockEpics);
     }
 
-    // --- 2.5 Get Project Backlog ---
-    public async Task<ProjectBacklogDto?> GetProjectBacklogAsync(int projectId, CancellationToken cancellationToken = default)
+    public async Task<ProjectBacklogDto?> GetProjectBacklogAsync(int projectId, CancellationToken ct = default)
     {
-        var project = await _projectRepository.GetByIdAsync(projectId, cancellationToken);
+        var project = await projectRepository.GetByIdAsync(projectId, ct);
         if (project == null) return null;
 
         var unassigned = new List<BacklogIssueDto>
@@ -159,9 +146,9 @@ public class ProjectService(
         return new ProjectBacklogDto(projectId, unassigned, futureSprints);
     }
 
-    public async Task<ProjectBoardDto?> GetProjectBoardAsync(int projectId, CancellationToken cancellationToken = default)
+    public async Task<ProjectBoardDto?> GetProjectBoardAsync(int projectId, CancellationToken ct = default)
     {
-        var project = await _projectRepository.GetByIdAsync(projectId, cancellationToken);
+        var project = await projectRepository.GetByIdAsync(projectId, ct);
         if (project == null) return null;
 
         var columns = new List<BoardColumnDto>
@@ -180,9 +167,9 @@ public class ProjectService(
         return new ProjectBoardDto(projectId, columns);
     }
 
-    public async Task<IEnumerable<ProjectCalendarEventDto>> GetProjectCalendarAsync(int projectId, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<ProjectCalendarEventDto>> GetProjectCalendarAsync(int projectId, CancellationToken ct = default)
     {
-        if (!await _projectRepository.ExistsAsync(projectId, cancellationToken))
+        if (!await projectRepository.ExistsAsync(projectId, ct))
             return [];
 
         return
@@ -193,9 +180,9 @@ public class ProjectService(
     }
 
     // --- 2.8 Get Project List ---
-    public async Task<IEnumerable<ProjectIssueListDto>> GetProjectListAsync(int projectId, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<ProjectIssueListDto>> GetProjectListAsync(int projectId, CancellationToken ct = default)
     {
-        if (!await _projectRepository.ExistsAsync(projectId, cancellationToken))
+        if (!await projectRepository.ExistsAsync(projectId, ct))
             return [];
 
         return
@@ -206,9 +193,9 @@ public class ProjectService(
     }
 
 
-    public async Task<ProjectDevelopmentDto?> GetProjectDevelopmentDetailsAsync(int projectId, CancellationToken cancellationToken = default)
+    public async Task<ProjectDevelopmentDto?> GetProjectDevelopmentDetailsAsync(int projectId, CancellationToken ct = default)
     {
-        if (!await _projectRepository.ExistsAsync(projectId, cancellationToken)) return null;
+        if (!await projectRepository.ExistsAsync(projectId, ct)) return null;
 
         var branches = new List<BranchDto>
         {
@@ -222,7 +209,7 @@ public class ProjectService(
     }
 
     // --- 2.10 Get Archived Work ---
-    public async Task<ArchivedWorkDto> GetArchivedWorkAsync(int projectId, CancellationToken cancellationToken = default)
+    public async Task<ArchivedWorkDto> GetArchivedWorkAsync(int projectId, CancellationToken ct = default)
     {
         var archivedIssues = new List<ProjectIssueListDto>
         {
@@ -241,9 +228,9 @@ public class ProjectService(
         return new ArchivedWorkDto(projectId, archivedIssues, []);
     }
 
-    public async Task<ProjectSettingsDto?> GetProjectSettingsAsync(int projectId, CancellationToken cancellationToken = default)
+    public async Task<ProjectSettingsDto?> GetProjectSettingsAsync(int projectId, CancellationToken ct = default)
     {
-        var project = await _projectRepository.GetByIdAsync(projectId, cancellationToken);
+        var project = await projectRepository.GetByIdAsync(projectId, ct);
         if (project == null) return null;
 
         var acl = new List<ProjectMemberPermissionDto>
@@ -267,7 +254,7 @@ public class ProjectService(
     uint clientRowVersion,
     CancellationToken ct = default)
     {
-        var project = await _projectRepository.GetByIdAsync(projectId, ct)
+        var project = await projectRepository.GetByIdAsync(projectId, ct)
             ?? throw new NotFoundException($"Project {projectId} not found.");
 
         if (project.RowVersion != clientRowVersion)
@@ -279,7 +266,7 @@ public class ProjectService(
 
         try
         {
-            await _unitOfWork.SaveChangesAsync(ct);
+            await unitOfWork.SaveChangesAsync(ct);
         }
         catch (DbUpdateConcurrencyException)
         {

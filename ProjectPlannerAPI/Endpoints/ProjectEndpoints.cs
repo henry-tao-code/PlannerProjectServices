@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using ProjectPlanner.Application.Common;
 using ProjectPlanner.Application.Common.Dto.Project;
+using ProjectPlanner.Application.Common.Dto.Search;
 using ProjectPlanner.Application.Services;
 using System.Security.Claims;
 
@@ -25,9 +26,10 @@ public static class ProjectEndpoints
         group.MapGet("/{id:int}/list", GetProjectListAsync);
         group.MapGet("/{id:int}/development", GetProjectDevelopmentDetailsAsync);
         group.MapGet("/{id:int}/archived", GetArchivedWorkAsync);
-
         group.MapGet("/{id:int}/settings", GetProjectSettingsAsync);
         group.MapPut("/{id:int}/settings", UpdateProjectSettingsAsync);
+
+        group.MapGet("/project/{projectId:int}/search", SearchProjectAsync);
 
         return app;
     }
@@ -268,5 +270,21 @@ public static class ProjectEndpoints
         {
             return TypedResults.BadRequest(ex.Message);
         }
+    }
+
+    private static async Task<Results<Ok<IEnumerable<SearchResultDto>>, BadRequest<string>>> SearchProjectAsync(
+    int projectId,
+    [FromQuery] string? query,
+    ISearchQueryService searchQueryService,
+    CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            return TypedResults.BadRequest("Search query parameter cannot be empty.");
+        }
+
+        var results = await searchQueryService.SearchAsync(projectId, query, ct);
+
+        return TypedResults.Ok<IEnumerable<SearchResultDto>>(results);
     }
 }

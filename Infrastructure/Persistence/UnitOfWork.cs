@@ -7,13 +7,11 @@ namespace ProjectPlanner.Infrastructure.Persistence;
 
 public class UnitOfWork(ProjectPlannerDbContext context) : IUnitOfWork
 {
-    private readonly ProjectPlannerDbContext _context = context;
-
     public async Task<int> SaveChangesAsync(CancellationToken ct = default)
     {
         try
         {
-            return await _context.SaveChangesAsync(ct);
+            return await context.SaveChangesAsync(ct);
         }
         catch (DbUpdateException ex) when (ex.InnerException is PostgresException pgEx)
         {

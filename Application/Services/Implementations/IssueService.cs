@@ -1,4 +1,5 @@
 ﻿using Domain.Entities;
+using Domain.Enums;
 using ProjectPlanner.Application.Common.Dto.Issue;
 using ProjectPlanner.Application.Common.Interfaces.Persistence;
 
@@ -10,6 +11,7 @@ public class IssueService(
     IEpicRepository epicRepository,
     ISprintRepository sprintRepository,
     IUserRepository userRepository,
+    ISearchIndexService searchIndexService,
     IUnitOfWork unitOfWork,
     IUserContext userContext) : IIssueService
 {
@@ -47,10 +49,10 @@ public class IssueService(
         await issueRepository.AddAsync(issue, ct);
         await unitOfWork.SaveChangesAsync(ct);
 
+        await searchIndexService.IndexIssueAsync(issue.Id, ct);
+
         return await MapAsync(issue, ct);
     }
-
-    // ---------------- READ ----------------
 
     public async Task<IssueDetailDto?> GetByIdAsync(int id, CancellationToken ct = default)
     {
@@ -69,7 +71,7 @@ public class IssueService(
             i.Id,
             i.IssueKey,
             i.Title,
-            i.Epic?.Name,
+            i.Epic?.Title,
             i.Status,
             i.Priority,
             i.Assignee?.Username,
@@ -93,7 +95,7 @@ public class IssueService(
             i.Id,
             i.IssueKey,
             i.Title,
-            i.Epic?.Name,
+            i.Epic?.Title,
             i.Status,
             i.Priority,
             i.Assignee?.Username,
@@ -143,7 +145,6 @@ public class IssueService(
         issue.MoveToSprint(dto.SprintId, userId);
         issue.SetParent(dto.ParentIssueId);
 
-        // Labels
         if (dto.Labels is not null)
         {
             var incoming = dto.Labels
@@ -166,6 +167,8 @@ public class IssueService(
         }
 
         await unitOfWork.SaveChangesAsync(ct);
+
+        await searchIndexService.IndexIssueAsync(issue.Id, ct);
 
         return await MapAsync(issue, ct);
     }
@@ -248,6 +251,8 @@ public class IssueService(
 
         issueRepository.Remove(issue);
         await unitOfWork.SaveChangesAsync(ct);
+
+        await searchIndexService.RemoveAsync(SearchEntityType.Issue, issue.Id, ct);
 
         return true;
     }
@@ -339,6 +344,6 @@ public class IssueService(
         if (!epicId.HasValue) return null;
 
         var epic = await epicRepository.GetByIdAsync(epicId.Value, ct);
-        return epic?.Name;
+        return epic?.Title;
     }
 }

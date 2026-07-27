@@ -8,19 +8,12 @@ namespace ProjectPlanner.Application.Services.Implementations;
 
 public class DevelopmentService(
     IDevelopmentRepository developmentRepository,
-    IProjectRepository projectRepository,
+    // IProjectRepository projectRepository,
     IIssueRepository issueRepository,
-    IUserRepository userRepository,
+    // IUserRepository userRepository,
     IUnitOfWork unitOfWork,
     IGitHubApiClient githubApiClient) : IDevelopmentService
 {
-    private readonly IDevelopmentRepository _developmentRepository = developmentRepository;
-    private readonly IProjectRepository _projectRepository = projectRepository;
-    private readonly IIssueRepository _issueRepository = issueRepository;
-    private readonly IUserRepository _userRepository = userRepository;
-    private readonly IUnitOfWork _unitOfWork = unitOfWork;
-    private readonly IGitHubApiClient _githubApiClient = githubApiClient;
-
     // ==========================================
     // Connection & Querying Methods
     // ==========================================
@@ -33,11 +26,11 @@ public class DevelopmentService(
         if (string.IsNullOrWhiteSpace(authorizationCode))
             throw new ArgumentException("authorizationCode is required.", nameof(authorizationCode));
 
-        User user = await _userRepository.GetByIdAsync(userId, ct)
-            ?? throw new KeyNotFoundException("User not found.");
+        //User user = await userRepository.GetByIdAsync(userId, ct)
+        //    ?? throw new KeyNotFoundException("User not found.");
 
         // Try to find an existing connection for the user
-        var existing = await _developmentRepository.GetConnectionByUserIdAsync(userId, ct);
+        var existing = await developmentRepository.GetConnectionByUserIdAsync(userId, ct);
 
         // Note: Ideally we would exchange the authorization code for an access token
         // and fetch the GitHub user id and username via the injected IGitHubApiClient.
@@ -49,7 +42,7 @@ public class DevelopmentService(
         if (existing != null)
         {
             existing.UpdateAccessToken(authorizationCode);
-            await _developmentRepository.UpdateConnectionAsync(existing, ct);
+            await developmentRepository.UpdateConnectionAsync(existing, ct);
         }
         else
         {
@@ -59,11 +52,11 @@ public class DevelopmentService(
                 githubUsername: "unknown",
                 accessToken: authorizationCode);
 
-            await _developmentRepository.AddConnectionAsync(connection, ct);
+            await developmentRepository.AddConnectionAsync(connection, ct);
             existing = connection;
         }
 
-        await _unitOfWork.SaveChangesAsync(ct);
+        await unitOfWork.SaveChangesAsync(ct);
 
         return new GitHubConnectionDto(
             existing.Id,
@@ -78,8 +71,8 @@ public class DevelopmentService(
         string repository,
         CancellationToken ct = default)
     {
-        Project project = await _projectRepository.GetByIdAsync(projectId, ct)
-            ?? throw new KeyNotFoundException("Project not found.");
+        //Project project = await projectRepository.GetByIdAsync(projectId, ct)
+        //    ?? throw new KeyNotFoundException("Project not found.");
 
         long githubRepositoryId = 0; // Usually fetched from GitHub API during connection
 
@@ -90,8 +83,8 @@ public class DevelopmentService(
             "main",
             githubRepositoryId);
 
-        await _developmentRepository.AddRepositoryAsync(githubRepository, ct);
-        await _unitOfWork.SaveChangesAsync(ct);
+        await developmentRepository.AddRepositoryAsync(githubRepository, ct);
+        await unitOfWork.SaveChangesAsync(ct);
 
         return new ProjectGitHubRepositoryDto(
             githubRepository.Id,
@@ -105,7 +98,7 @@ public class DevelopmentService(
         int issueId,
         CancellationToken ct = default)
     {
-        var commits = await _developmentRepository.GetCommitsByIssueIdAsync(issueId, ct);
+        var commits = await developmentRepository.GetCommitsByIssueIdAsync(issueId, ct);
 
         return commits.Select(c =>
             new IssueCommitDto(
@@ -121,7 +114,7 @@ public class DevelopmentService(
         int issueId,
         CancellationToken ct = default)
     {
-        var prs = await _developmentRepository.GetPullRequestsByIssueIdAsync(issueId, ct);
+        var prs = await developmentRepository.GetPullRequestsByIssueIdAsync(issueId, ct);
 
         return prs.Select(pr =>
             new IssuePullRequestDto(
@@ -135,19 +128,19 @@ public class DevelopmentService(
 
     public async Task SyncIssueCommitsAsync(int issueId, CancellationToken ct = default)
     {
-        var issue = await _issueRepository.GetByIdAsync(issueId, ct)
+        var issue = await issueRepository.GetByIdAsync(issueId, ct)
             ?? throw new KeyNotFoundException("Issue not found.");
 
-        var githubRepo = await _developmentRepository.GetRepositoryByProjectIdAsync(issue.ProjectId, ct)
+        var githubRepo = await developmentRepository.GetRepositoryByProjectIdAsync(issue.ProjectId, ct)
             ?? throw new InvalidOperationException("No GitHub repository connected to this project.");
 
-        var githubCommits = await _githubApiClient.SearchCommitsAsync(
+        var githubCommits = await githubApiClient.SearchCommitsAsync(
             githubRepo.Owner,
             githubRepo.Repository,
             issue.IssueKey,
             ct);
 
-        var existingCommits = await _developmentRepository.GetCommitsByIssueIdAsync(issueId, ct);
+        var existingCommits = await developmentRepository.GetCommitsByIssueIdAsync(issueId, ct);
         var existingShas = existingCommits.Select(c => c.Sha).ToHashSet();
 
         foreach (var gc in githubCommits)
@@ -162,28 +155,28 @@ public class DevelopmentService(
                     gc.Url,
                     gc.CommittedAt);
 
-                await _developmentRepository.AddCommitAsync(newCommit, ct);
+                await developmentRepository.AddCommitAsync(newCommit, ct);
             }
         }
 
-        await _unitOfWork.SaveChangesAsync(ct);
+        await unitOfWork.SaveChangesAsync(ct);
     }
 
     public async Task SyncIssuePullRequestsAsync(int issueId, CancellationToken ct = default)
     {
-        var issue = await _issueRepository.GetByIdAsync(issueId, ct)
+        var issue = await issueRepository.GetByIdAsync(issueId, ct)
             ?? throw new KeyNotFoundException("Issue not found.");
 
-        var githubRepo = await _developmentRepository.GetRepositoryByProjectIdAsync(issue.ProjectId, ct)
+        var githubRepo = await developmentRepository.GetRepositoryByProjectIdAsync(issue.ProjectId, ct)
             ?? throw new InvalidOperationException("No GitHub repository connected.");
 
-        var githubPrs = await _githubApiClient.SearchPullRequestsAsync(
+        var githubPrs = await githubApiClient.SearchPullRequestsAsync(
             githubRepo.Owner,
             githubRepo.Repository,
             issue.IssueKey,
             ct);
 
-        var existingPrs = await _developmentRepository.GetPullRequestsByIssueIdAsync(issueId, ct);
+        var existingPrs = await developmentRepository.GetPullRequestsByIssueIdAsync(issueId, ct);
         var existingPrNumbers = existingPrs.ToDictionary(pr => pr.Number);
 
         foreach (var gPr in githubPrs)
@@ -203,11 +196,11 @@ public class DevelopmentService(
                     gPr.State,
                     gPr.IsMerged);
 
-                await _developmentRepository.AddPullRequestAsync(newPr, ct);
+                await developmentRepository.AddPullRequestAsync(newPr, ct);
             }
         }
 
-        await _unitOfWork.SaveChangesAsync(ct);
+        await unitOfWork.SaveChangesAsync(ct);
     }
 
     // ==========================================
@@ -220,7 +213,7 @@ public class DevelopmentService(
         IEnumerable<GitHubWebhookCommitDto> commits,
         CancellationToken ct = default)
     {
-        var githubRepo = await _developmentRepository.GetRepositoryByOwnerAndNameAsync(owner, repository, ct);
+        var githubRepo = await developmentRepository.GetRepositoryByOwnerAndNameAsync(owner, repository, ct);
         if (githubRepo == null) return;
 
         foreach (var commit in commits)
@@ -229,10 +222,10 @@ public class DevelopmentService(
 
             foreach (var key in issueKeys)
             {
-                var issue = await _issueRepository.GetByKeyAndProjectIdAsync(key, githubRepo.ProjectId, ct);
+                var issue = await issueRepository.GetByKeyAndProjectIdAsync(key, githubRepo.ProjectId, ct);
                 if (issue == null) continue;
 
-                var exists = await _developmentRepository.CommitExistsAsync(commit.Id, ct);
+                var exists = await developmentRepository.CommitExistsAsync(commit.Id, ct);
                 if (!exists)
                 {
                     var newCommit = IssueCommit.Create(
@@ -243,12 +236,12 @@ public class DevelopmentService(
                         commit.Url,
                         commit.Timestamp);
 
-                    await _developmentRepository.AddCommitAsync(newCommit, ct);
+                    await developmentRepository.AddCommitAsync(newCommit, ct);
                 }
             }
         }
 
-        await _unitOfWork.SaveChangesAsync(ct);
+        await unitOfWork.SaveChangesAsync(ct);
     }
 
     public async Task ProcessPullRequestWebhookAsync(
@@ -257,7 +250,7 @@ public class DevelopmentService(
         GitHubWebhookPullRequestDto prData,
         CancellationToken ct = default)
     {
-        var githubRepo = await _developmentRepository.GetRepositoryByOwnerAndNameAsync(owner, repository, ct);
+        var githubRepo = await developmentRepository.GetRepositoryByOwnerAndNameAsync(owner, repository, ct);
         if (githubRepo == null) return;
 
         var textToSearch = $"{prData.Title} {prData.BranchName}";
@@ -265,10 +258,10 @@ public class DevelopmentService(
 
         foreach (var key in issueKeys)
         {
-            var issue = await _issueRepository.GetByKeyAndProjectIdAsync(key, githubRepo.ProjectId, ct);
+            var issue = await issueRepository.GetByKeyAndProjectIdAsync(key, githubRepo.ProjectId, ct);
             if (issue == null) continue;
 
-            var existingPr = await _developmentRepository.GetPullRequestByNumberAsync(issue.Id, prData.Number, ct);
+            var existingPr = await developmentRepository.GetPullRequestByNumberAsync(issue.Id, prData.Number, ct);
 
             if (existingPr != null)
             {
@@ -278,18 +271,18 @@ public class DevelopmentService(
             {
                 var newPr = IssuePullRequest.Create(
                     issue.Id,
-                    prData.GithubPullRequestId, // Pass the ID now
+                    prData.GithubPullRequestId,
                     prData.Number,
                     prData.Title,
                     prData.Url,
                     prData.State,
                     prData.Merged);
 
-                await _developmentRepository.AddPullRequestAsync(newPr, ct);
+                await developmentRepository.AddPullRequestAsync(newPr, ct);
             }
         }
 
-        await _unitOfWork.SaveChangesAsync(ct);
+        await unitOfWork.SaveChangesAsync(ct);
     }
 
     private IEnumerable<string> ExtractIssueKeys(string text)

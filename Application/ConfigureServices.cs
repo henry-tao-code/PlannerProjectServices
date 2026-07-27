@@ -21,6 +21,8 @@ static public class ConfigureServices
         services.AddScoped<ICommentService, CommentService>();
         services.AddScoped<IHistoryService, HistoryService>();
         services.AddScoped<IWorkLogService, WorkLogService>();
+        services.AddScoped<ISearchQueryService, SearchQueryService>();
+        services.AddScoped<ISearchIndexService, SearchIndexService>();
 
         services.AddScoped<IGitHubApiClient, GitHubApiClient>();
 

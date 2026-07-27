@@ -154,7 +154,7 @@ public class SprintService(
             i.Id,
             i.IssueKey,
             i.Title,
-            i.Epic?.Name,
+            i.Epic?.Title,
             i.Status,
             i.Priority,
             i.Assignee?.Username,
