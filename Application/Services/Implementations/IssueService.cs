@@ -1,6 +1,5 @@
-﻿using Domain.Entities;
-using Domain.Enums;
-using ProjectPlanner.Application.Common.Dto.Issue;
+﻿using Domain.Enums;
+using ProjectPlanner.Application.Common.Dtos.Issue;
 using ProjectPlanner.Application.Common.Interfaces.Persistence;
 
 namespace ProjectPlanner.Application.Services.Implementations;
@@ -110,9 +109,6 @@ public class IssueService(
     {
         var issue = await issueRepository.GetByIdAsync(id, ct)
             ?? throw new KeyNotFoundException($"Issue {id} not found.");
-
-        if (issue.RowVersion != dto.RowVersion)
-            throw new InvalidOperationException("Concurrency conflict detected.");
 
         var userId = userContext.UserId;
 
@@ -326,8 +322,7 @@ public class IssueService(
             Attachments = [],
 
             CreatedAt = issue.CreatedAt,
-            UpdatedAt = issue.UpdatedAt,
-            RowVersion = issue.RowVersion
+            UpdatedAt = issue.UpdatedAt
         };
     }
 

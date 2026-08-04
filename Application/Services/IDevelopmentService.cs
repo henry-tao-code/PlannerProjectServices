@@ -1,6 +1,6 @@
-﻿using ProjectPlanner.Application.Common.Dto.Development;
+﻿using ProjectPlanner.Application.Common.Dtos.Development;
 
-namespace ProjectPlanner.Application.Common.Interfaces.Services;
+namespace ProjectPlanner.Application.Services;
 
 public interface IDevelopmentService
 {

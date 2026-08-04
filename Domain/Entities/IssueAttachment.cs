@@ -1,4 +1,6 @@
-﻿using Domain.Entities;
+﻿using Domain.Enums;
+
+namespace Domain.Entities;
 
 public class IssueAttachment
 {
@@ -7,21 +9,29 @@ public class IssueAttachment
     public int IssueId { get; set; }
     public Issue Issue { get; set; } = null!;
 
-    public string FileName { get; set; } = null!;
+    public string OriginalFileName { get; set; } = null!;
+
     public string StoredFileName { get; set; } = null!;
 
     public string ContentType { get; set; } = null!;
-    public long SizeBytes { get; set; }
 
-    public string FilePath { get; set; } = null!;
-    public int UploadedByUserId { get; set; }
-    public User UploadedBy { get; set; } = null!;
+    public long FileSize { get; set; }
 
-    public DateTime UploadedAt { get; set; }
-    public bool IsDeleted { get; set; } = false;
+    public string StorageKey { get; set; } = null!;
 
+    public string? Sha256Hash { get; set; }
+
+    public int? UploadedByUserId { get; set; }
+    public User? UploadedBy { get; set; }
+    public DateTime UploadedAt { get; set; } = DateTime.UtcNow;
+
+    public AttachmentStatus Status { get; set; } = AttachmentStatus.Uploaded;
+    public DateTime? ProcessedAt { get; set; }
+    public string? ProcessingError { get; set; }
+
+    public bool IsDeleted { get; set; }
     public DateTime? DeletedAt { get; set; }
 
     public int? DeletedByUserId { get; set; }
-    public uint RowVersion { get; set; }
+    public User? DeletedBy { get; set; }
 }

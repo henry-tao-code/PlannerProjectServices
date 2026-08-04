@@ -1,6 +1,6 @@
 ﻿using Domain.Entities;
 using Domain.Enums;
-using ProjectPlanner.Application.Common.Dto.Epic;
+using ProjectPlanner.Application.Common.Dtos.Epic;
 using ProjectPlanner.Application.Common.Interfaces.Persistence;
 
 namespace ProjectPlanner.Application.Services.Implementations;
@@ -79,9 +79,6 @@ public class EpicService(
         var epic = await epicRepository.GetByIdAsync(id, cancellationToken)
             ?? throw new KeyNotFoundException($"Epic with ID {id} was not found.");
 
-        if (epic.RowVersion != dto.RowVersion)
-            throw new InvalidOperationException("The record was modified by another request. Refresh your data.");
-
         epic.UpdateDetails(dto.Name, dto.Summary, dto.Description);
         epic.UpdateTimeline(dto.StartDate, dto.DueDate);
         epic.UpdateStatus(dto.Status);
@@ -134,8 +131,7 @@ public class EpicService(
             epic.AssigneeId,
             assigneeUsername,
             epic.CreatedAt,
-            epic.UpdatedAt,
-            epic.RowVersion
+            epic.UpdatedAt
         );
     }
 }

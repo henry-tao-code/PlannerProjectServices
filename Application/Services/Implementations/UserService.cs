@@ -1,7 +1,6 @@
 ﻿using Domain.Entities;
-using ProjectPlanner.Application.Common;
-using ProjectPlanner.Application.Common.Dto.Auth;
-using ProjectPlanner.Application.Common.Dto.User;
+using ProjectPlanner.Application.Common.Dtos.Auth;
+using ProjectPlanner.Application.Common.Dtos.User;
 using ProjectPlanner.Application.Common.Interfaces.Persistence;
 using ProjectPlanner.Application.Common.Interfaces.Security;
 
@@ -130,14 +129,10 @@ public class UserService(
     public async Task<UserResponseDto> UpdateProfileAsync(
         int id,
         UpdateUserDto dto,
-        uint rowVersion,
         CancellationToken ct = default)
     {
         var user = await userRepository.GetByIdAsync(id, ct)
             ?? throw new KeyNotFoundException("User not found.");
-
-        if (user.RowVersion != rowVersion)
-            throw new ConcurrencyException("User was updated by another process.");
 
         dto = dto with
         {
@@ -165,9 +160,6 @@ public class UserService(
     {
         var user = await userRepository.GetByIdAsync(id, ct)
             ?? throw new KeyNotFoundException("User not found.");
-
-        if (user.RowVersion != dto.RowVersion)
-            throw new ConcurrencyException("User was updated by another process.");
 
         if (string.IsNullOrWhiteSpace(user.PasswordHash))
             throw new InvalidOperationException("Password login is not enabled for this user.");
@@ -197,5 +189,5 @@ public class UserService(
     // ---------------- MAPPING ----------------
 
     private static UserResponseDto Map(User user)
-        => new(user.Id, user.Username, user.Email, user.RowVersion);
+        => new(user.Id, user.Username, user.Email);
 }

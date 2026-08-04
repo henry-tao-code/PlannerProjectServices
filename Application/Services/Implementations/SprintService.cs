@@ -1,7 +1,7 @@
 ﻿using Domain.Entities;
 using Domain.Enums;
-using ProjectPlanner.Application.Common.Dto.Issue;
-using ProjectPlanner.Application.Common.Dto.Sprint;
+using ProjectPlanner.Application.Common.Dtos.Issue;
+using ProjectPlanner.Application.Common.Dtos.Sprint;
 using ProjectPlanner.Application.Common.Interfaces.Persistence;
 
 namespace ProjectPlanner.Application.Services.Implementations;

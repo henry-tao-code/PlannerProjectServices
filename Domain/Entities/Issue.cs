@@ -1,6 +1,5 @@
-﻿using Domain.Enums;
-
-namespace Domain.Entities;
+﻿using Domain.Entities;
+using Domain.Enums;
 
 public class Issue
 {
@@ -55,7 +54,6 @@ public class Issue
     public DateTime UpdatedAt { get; private set; }
 
     public bool IsDeleted { get; private set; }
-    public uint RowVersion { get; set; }
 
     private Issue() { }
 

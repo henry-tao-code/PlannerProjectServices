@@ -2,10 +2,10 @@
 using Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using ProjectPlanner.Application.Common;
-using ProjectPlanner.Application.Common.Dto.Development;
-using ProjectPlanner.Application.Common.Dto.Issue;
-using ProjectPlanner.Application.Common.Dto.Project;
-using ProjectPlanner.Application.Common.Dto.Shared;
+using ProjectPlanner.Application.Common.Dtos.Development;
+using ProjectPlanner.Application.Common.Dtos.Issue;
+using ProjectPlanner.Application.Common.Dtos.Project;
+using ProjectPlanner.Application.Common.Dtos.Shared;
 using ProjectPlanner.Application.Common.Interfaces.Persistence;
 using System.Data;
 
@@ -25,7 +25,7 @@ public class ProjectService(
         var projects = await projectRepository.GetProjectsByUserIdAsync(userId, ct);
 
         return projects.Select(p => new ProjectDashboardResponseDto(
-            p.Id, p.Name, p.Description, p.Key, p.LeadId, p.CreatedAt, p.RowVersion));
+            p.Id, p.Name, p.Description, p.Key, p.LeadId, p.CreatedAt));
     }
 
     public async Task<ProjectDashboardResponseDto> CreateProjectAsync(int userId, CreateProjectDto dto, CancellationToken ct = default)
@@ -57,8 +57,7 @@ public class ProjectService(
             project.Description,
             project.Key,
             project.LeadId,
-            project.CreatedAt,
-            project.RowVersion);
+            project.CreatedAt);
     }
 
     public async Task<ProjectSummaryDto?> GetProjectSummaryAsync(
@@ -243,8 +242,7 @@ public class ProjectService(
             project.Name,
             project.Description,
             false,
-            acl,
-            project.RowVersion
+            acl
         );
     }
 
@@ -256,9 +254,6 @@ public class ProjectService(
     {
         var project = await projectRepository.GetByIdAsync(projectId, ct)
             ?? throw new NotFoundException($"Project {projectId} not found.");
-
-        if (project.RowVersion != clientRowVersion)
-            throw new ConcurrencyException("Project was updated by another user. Refresh required.");
 
         project.Name = dto.Name;
         project.Description = dto.Description;
@@ -278,8 +273,7 @@ public class ProjectService(
             project.Name,
             project.Description,
             false,
-            [],
-            project.RowVersion
+            []
         );
     }
 }

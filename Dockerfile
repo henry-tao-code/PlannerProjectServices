@@ -5,11 +5,11 @@ WORKDIR /src
 # Copy the entire solution
 COPY . .
 
-# Restore
-RUN dotnet restore ProjectPlanner.Api/ProjectPlanner.Api.csproj
+# Restore (pointing to the correct 'API' directory)
+RUN dotnet restore API/API.csproj
 
 # Publish
-RUN dotnet publish ProjectPlanner.Api/ProjectPlanner.Api.csproj \
+RUN dotnet publish API/API.csproj \
     -c Release \
     -o /app/publish \
     --no-restore
@@ -22,4 +22,4 @@ COPY --from=build /app/publish .
 
 EXPOSE 8080
 
-ENTRYPOINT ["dotnet", "ProjectPlanner.Api.dll"]
+ENTRYPOINT ["dotnet", "ProjectPlanner.API.dll"]

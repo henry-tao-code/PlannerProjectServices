@@ -1,5 +1,5 @@
 ﻿using Domain.Entities;
-using ProjectPlanner.Application.Common.Dto.History;
+using ProjectPlanner.Application.Common.Dtos.History;
 using ProjectPlanner.Application.Common.Interfaces.Persistence;
 
 namespace ProjectPlanner.Application.Services.Implementations;

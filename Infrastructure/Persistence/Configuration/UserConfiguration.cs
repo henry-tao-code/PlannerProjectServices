@@ -43,9 +43,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.HasQueryFilter(u => !u.IsDeleted);
 
-        builder.Property(u => u.RowVersion)
-            .IsRowVersion()
-            .IsConcurrencyToken();
+        builder.Property<uint>("xmin").IsRowVersion();
 
         builder.HasMany(u => u.ProjectMemberships)
             .WithOne(m => m.User)

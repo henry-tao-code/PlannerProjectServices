@@ -1,4 +1,6 @@
-﻿using ProjectPlanner.Application.Common.Dto.History;
+﻿using ProjectPlanner.Application.Common.Dtos.History;
+
+namespace ProjectPlanner.Application.Services;
 
 public interface IHistoryService
 {

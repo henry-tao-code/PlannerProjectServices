@@ -1,4 +1,4 @@
-﻿using ProjectPlanner.Application.Common.Dto.Epic;
+﻿using ProjectPlanner.Application.Common.Dtos.Epic;
 
 namespace ProjectPlanner.Application.Services;
 

@@ -28,9 +28,7 @@ public class ProjectConfiguration : IEntityTypeConfiguration<Project>
         builder.Property(p => p.CreatedAt).IsRequired();
         builder.Property(p => p.UpdatedAt).IsRequired();
 
-        builder.Property(p => p.RowVersion)
-            .IsRowVersion()
-            .IsConcurrencyToken();
+        builder.Property<uint>("xmin").IsRowVersion();
 
         builder.HasIndex(p => p.LeadId)
             .HasDatabaseName("IX_Projects_LeadId");

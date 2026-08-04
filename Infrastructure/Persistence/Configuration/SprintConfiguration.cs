@@ -46,9 +46,7 @@ public class SprintConfiguration : IEntityTypeConfiguration<Sprint>
         builder.HasQueryFilter(s => !s.IsDeleted);
 
         // ---------------- Concurrency ----------------
-        builder.Property(s => s.RowVersion)
-            .IsRowVersion()
-            .IsConcurrencyToken();
+        builder.Property<uint>("xmin").IsRowVersion();
 
         // ---------------- Relationships ----------------
 

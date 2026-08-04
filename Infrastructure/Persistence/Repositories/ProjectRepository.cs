@@ -1,7 +1,6 @@
 ﻿using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using ProjectPlanner.Application.Common.Interfaces.Persistence;
-using ProjectPlanner.Infrastructure.Persistence;
 
 namespace ProjectPlanner.Infrastructure.Persistence.Repositories;
 

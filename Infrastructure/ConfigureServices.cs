@@ -1,17 +1,25 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using Confluent.Kafka;
+using Contracts.Events;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using OpenAI;
+using ProjectPlanner.Application.Common.Interfaces.AI;
+using ProjectPlanner.Application.Common.Interfaces.Messaging;
 using ProjectPlanner.Application.Common.Interfaces.Persistence;
 using ProjectPlanner.Application.Common.Interfaces.Security;
+using ProjectPlanner.Application.Common.Interfaces.Storage;
 using ProjectPlanner.Application.Services;
 using ProjectPlanner.Application.Services.Implementations;
+using ProjectPlanner.Infrastructure.AI;
+using ProjectPlanner.Infrastructure.Messaging;
 using ProjectPlanner.Infrastructure.Persistence;
 using ProjectPlanner.Infrastructure.Persistence.Repositories;
 using ProjectPlanner.Infrastructure.Security;
+using ProjectPlanner.Infrastructure.Storage;
 using System.ClientModel;
 using System.Text;
 
@@ -43,12 +51,15 @@ public static class ConfigureServices
         services.AddScoped<ISprintRepository, SprintRepository>();
         services.AddScoped<IIssueRepository, IssueRepository>();
         services.AddScoped<ICommentRepository, CommentRepository>();
+        services.AddScoped<IIssueAttachmentRepository, IssueAttachmentRepository>();
         services.AddScoped<IHistoryRepository, HistoryRepository>();
         services.AddScoped<IDevelopmentRepository, DevelopmentRepository>();
         services.AddScoped<IWorkLogRepository, WorkLogRepository>();
         services.AddScoped<ISearchQueryRepository, SearchQueryRepository>();
         services.AddScoped<ISearchIndexRepository, SearchIndexRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
+        services.AddScoped<IFileStorageService, LocalFileStorageService>();
+        services.AddScoped<IDocumentChunkRepository, DocumentChunkRepository>();
 
         return services;
     }
@@ -59,7 +70,6 @@ public static class ConfigureServices
     {
         services.AddScoped<IPasswordHasher, PasswordHasher>();
         services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
-
         services.AddScoped<IUserContext, UserContext>();
 
         services.AddAuthentication(options =>
@@ -114,6 +124,52 @@ public static class ConfigureServices
                 .GetChatClient("planner-smart-model")
                 .AsIChatClient();
         });
+
+        return services;
+    }
+
+    public static IServiceCollection AddMessagingServices(
+    this IServiceCollection services,
+    IConfiguration configuration)
+    {
+        var teiUrl = configuration["Tei:BaseUrl"] ?? "http://localhost:8080";
+        services.AddHttpClient<ITEIEmbeddingService, TeiEmbeddingService>(client =>
+        {
+            client.BaseAddress = new Uri(teiUrl.EndsWith('/') ? teiUrl : $"{teiUrl}/");
+            client.Timeout = TimeSpan.FromSeconds(30);
+        });
+
+        services.AddHostedService<DocumentParsedConsumerService>();
+
+        services.Configure<KafkaOptions>(configuration.GetSection("Kafka"));
+
+        services.AddSingleton<IProducer<string, string>>(sp =>
+        {
+            var config = new ProducerConfig
+            {
+                BootstrapServers = configuration["Kafka:BootstrapServers"]
+            };
+
+            return new ProducerBuilder<string, string>(config).Build();
+        });
+
+        services.AddScoped<IKafkaProducer, KafkaProducer>();
+
+        services.AddSingleton<IConsumer<string, DocumentProcessedEvent>>(sp =>
+        {
+            var config = new ConsumerConfig
+            {
+                BootstrapServers = configuration["Kafka:BootstrapServers"],
+                GroupId = "document-processed-consumer-group",
+                AutoOffsetReset = AutoOffsetReset.Earliest,
+                EnableAutoCommit = false
+            };
+
+            return new ConsumerBuilder<string, DocumentProcessedEvent>(config)
+                .SetValueDeserializer(new KafkaJsonDeserializer<DocumentProcessedEvent>())
+                .Build();
+        });
+
         return services;
     }
 }

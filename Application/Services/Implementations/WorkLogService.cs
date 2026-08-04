@@ -1,6 +1,5 @@
 ﻿using Domain.Entities;
-using ProjectPlanner.Application.Common.Dto;
-using ProjectPlanner.Application.Common.Dto.WorkLog;
+using ProjectPlanner.Application.Common.Dtos.WorkLog;
 using ProjectPlanner.Application.Common.Interfaces.Persistence;
 
 namespace ProjectPlanner.Application.Services.Implementations;
@@ -48,7 +47,7 @@ public class WorkLogService(
     {
         var workLog = await workLogRepository.GetByIdAsync(id, cancellationToken);
         if (workLog == null) return false;
-                
+
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return true;

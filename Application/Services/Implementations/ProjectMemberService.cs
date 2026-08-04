@@ -1,6 +1,6 @@
 ﻿using Domain.Entities;
 using Domain.Enums;
-using ProjectPlanner.Application.Common.Dto.ProjectMember;
+using ProjectPlanner.Application.Common.Dtos.ProjectMember;
 using ProjectPlanner.Application.Common.Interfaces.Persistence;
 
 namespace ProjectPlanner.Application.Services.Implementations;

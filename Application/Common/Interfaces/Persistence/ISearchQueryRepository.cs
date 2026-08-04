@@ -1,4 +1,4 @@
-﻿using ProjectPlanner.Application.Common.Dto.Search;
+﻿using ProjectPlanner.Application.Common.Dtos.Search;
 
 namespace ProjectPlanner.Application.Common.Interfaces.Persistence;
 

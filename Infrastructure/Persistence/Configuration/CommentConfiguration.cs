@@ -1,5 +1,4 @@
-﻿using Domain.Entities;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace ProjectPlanner.Infrastructure.Persistence.Configurations;
@@ -23,9 +22,7 @@ public class CommentConfiguration : IEntityTypeConfiguration<IssueComment>
             .IsRequired();
 
         // ---------------- Concurrency ----------------
-        builder.Property(c => c.RowVersion)
-            .IsRowVersion()
-            .IsConcurrencyToken();
+        builder.Property<uint>("xmin").IsRowVersion();
 
         // ---------------- Relationships ----------------
         builder.HasOne(c => c.Issue)

@@ -25,6 +25,38 @@ namespace ProjectPlanner.Infrastructure.Migrations
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "pg_trgm");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Domain.Entities.DocumentChunk", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("AttachmentId")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("ChunkIndex")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasMaxLength(8000)
+                        .HasColumnType("character varying(8000)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.PrimitiveCollection<float[]>("Embedding")
+                        .HasColumnType("real[]");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AttachmentId", "ChunkIndex");
+
+                    b.ToTable("DocumentChunks", "app");
+                });
+
             modelBuilder.Entity("Domain.Entities.Epic", b =>
                 {
                     b.Property<int>("Id")
@@ -52,12 +84,6 @@ namespace ProjectPlanner.Infrastructure.Migrations
                     b.Property<int>("ProjectId")
                         .HasColumnType("integer");
 
-                    b.Property<uint>("RowVersion")
-                        .IsConcurrencyToken()
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("xid")
-                        .HasColumnName("xmin");
-
                     b.Property<DateTime?>("StartDate")
                         .HasColumnType("timestamp without time zone");
 
@@ -78,6 +104,12 @@ namespace ProjectPlanner.Infrastructure.Migrations
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp without time zone");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
 
                     b.HasKey("Id");
 
@@ -130,113 +162,89 @@ namespace ProjectPlanner.Infrastructure.Migrations
                     b.ToTable("GitHubConnections", "app");
                 });
 
-            modelBuilder.Entity("Domain.Entities.Issue", b =>
+            modelBuilder.Entity("Domain.Entities.IssueAttachment", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
+                        .HasColumnType("bigint");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
-                    b.Property<int?>("AssigneeId")
-                        .HasColumnType("integer");
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
-                    b.Property<DateTime?>("CompletedAt")
+                    b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp without time zone");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)");
-
-                    b.Property<DateTime?>("DueDate")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.Property<int?>("EpicId")
+                    b.Property<int?>("DeletedByUserId")
                         .HasColumnType("integer");
+
+                    b.Property<long>("FileSize")
+                        .HasColumnType("bigint");
 
                     b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
 
-                    b.Property<string>("IssueKey")
+                    b.Property<int>("IssueId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("OriginalFileName")
                         .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<DateTime?>("ProcessedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("ProcessingError")
                         .HasColumnType("text");
 
-                    b.Property<int>("IssueType")
+                    b.Property<string>("Sha256Hash")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<int>("Status")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("ParentIssueId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Priority")
+                    b.Property<string>("StorageKey")
                         .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasDefaultValue("Medium");
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
-                    b.Property<int>("ProjectId")
+                    b.Property<string>("StoredFileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<DateTime>("UploadedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int?>("UploadedByUserId")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("ReporterId")
-                        .HasColumnType("integer");
-
-                    b.Property<uint>("RowVersion")
+                    b.Property<uint>("xmin")
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("xid")
                         .HasColumnName("xmin");
 
-                    b.Property<int?>("SprintId")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("StartDate")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasDefaultValue("ToDo");
-
-                    b.Property<int>("StoryPoints")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("character varying(150)");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp without time zone");
-
                     b.HasKey("Id");
 
-                    b.HasIndex("AssigneeId");
+                    b.HasIndex("DeletedByUserId");
 
-                    b.HasIndex("EpicId");
+                    b.HasIndex("IssueId");
 
-                    b.HasIndex("ParentIssueId");
+                    b.HasIndex("UploadedAt");
 
-                    b.HasIndex("Priority");
+                    b.HasIndex("UploadedByUserId");
 
-                    b.HasIndex("ProjectId");
+                    b.HasIndex("IssueId", "IsDeleted");
 
-                    b.HasIndex("ReporterId");
-
-                    b.HasIndex("SprintId");
-
-                    b.HasIndex("Status");
-
-                    b.HasIndex("Title");
-
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Title"), "gin");
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("Title"), new[] { "gin_trgm_ops" });
-
-                    b.ToTable("Issues", "app");
+                    b.ToTable("IssueAttachments", "app");
                 });
 
             modelBuilder.Entity("Domain.Entities.IssueCommit", b =>
@@ -405,12 +413,6 @@ namespace ProjectPlanner.Infrastructure.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
-                    b.Property<uint>("RowVersion")
-                        .IsConcurrencyToken()
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("xid")
-                        .HasColumnName("xmin");
-
                     b.Property<string>("Slug")
                         .IsRequired()
                         .HasColumnType("text");
@@ -420,6 +422,12 @@ namespace ProjectPlanner.Infrastructure.Migrations
 
                     b.Property<int?>("UpdatedByUserId")
                         .HasColumnType("integer");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
 
                     b.HasKey("Id");
 
@@ -647,12 +655,6 @@ namespace ProjectPlanner.Infrastructure.Migrations
                     b.Property<int>("ProjectId")
                         .HasColumnType("integer");
 
-                    b.Property<uint>("RowVersion")
-                        .IsConcurrencyToken()
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("xid")
-                        .HasColumnName("xmin");
-
                     b.Property<DateTime?>("StartDate")
                         .HasColumnType("timestamp without time zone");
 
@@ -662,6 +664,12 @@ namespace ProjectPlanner.Infrastructure.Migrations
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp without time zone");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
 
                     b.HasKey("Id");
 
@@ -703,12 +711,6 @@ namespace ProjectPlanner.Infrastructure.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
 
-                    b.Property<uint>("RowVersion")
-                        .IsConcurrencyToken()
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("xid")
-                        .HasColumnName("xmin");
-
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp without time zone");
 
@@ -716,6 +718,12 @@ namespace ProjectPlanner.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
 
                     b.HasKey("Id");
 
@@ -775,64 +783,113 @@ namespace ProjectPlanner.Infrastructure.Migrations
                     b.ToTable("WorkLogs", "app");
                 });
 
-            modelBuilder.Entity("IssueAttachment", b =>
+            modelBuilder.Entity("Issue", b =>
                 {
-                    b.Property<long>("Id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
-
-                    b.Property<string>("ContentType")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.Property<int?>("DeletedByUserId")
                         .HasColumnType("integer");
 
-                    b.Property<string>("FileName")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("FilePath")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<int?>("AssigneeId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<DateTime?>("DueDate")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int?>("EpicId")
+                        .HasColumnType("integer");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
-                    b.Property<int>("IssueId")
-                        .HasColumnType("integer");
-
-                    b.Property<long>("RowVersion")
-                        .HasColumnType("bigint");
-
-                    b.Property<long>("SizeBytes")
-                        .HasColumnType("bigint");
-
-                    b.Property<string>("StoredFileName")
+                    b.Property<string>("IssueKey")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<DateTime>("UploadedAt")
+                    b.Property<int>("IssueType")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("ParentIssueId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Priority")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasDefaultValue("Medium");
+
+                    b.Property<int>("ProjectId")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("ReporterId")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("SprintId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("StartDate")
                         .HasColumnType("timestamp without time zone");
 
-                    b.Property<int>("UploadedById")
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasDefaultValue("ToDo");
+
+                    b.Property<int>("StoryPoints")
                         .HasColumnType("integer");
 
-                    b.Property<int>("UploadedByUserId")
-                        .HasColumnType("integer");
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<uint>("xmin")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("IssueId");
+                    b.HasIndex("AssigneeId");
 
-                    b.HasIndex("UploadedById");
+                    b.HasIndex("EpicId");
 
-                    b.ToTable("IssueAttachment", "app");
+                    b.HasIndex("ParentIssueId");
+
+                    b.HasIndex("Priority");
+
+                    b.HasIndex("ProjectId");
+
+                    b.HasIndex("ReporterId");
+
+                    b.HasIndex("SprintId");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("Title");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Title"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("Title"), new[] { "gin_trgm_ops" });
+
+                    b.ToTable("Issues", "app");
                 });
 
             modelBuilder.Entity("IssueComment", b =>
@@ -859,7 +916,7 @@ namespace ProjectPlanner.Infrastructure.Migrations
                     b.Property<int>("IssueId")
                         .HasColumnType("integer");
 
-                    b.Property<uint>("RowVersion")
+                    b.Property<uint>("xmin")
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("xid")
@@ -924,6 +981,17 @@ namespace ProjectPlanner.Infrastructure.Migrations
                     b.ToTable("IssueLinks", "app");
                 });
 
+            modelBuilder.Entity("Domain.Entities.DocumentChunk", b =>
+                {
+                    b.HasOne("Domain.Entities.IssueAttachment", "Attachment")
+                        .WithMany()
+                        .HasForeignKey("AttachmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Attachment");
+                });
+
             modelBuilder.Entity("Domain.Entities.Epic", b =>
                 {
                     b.HasOne("Domain.Entities.User", "Assignee")
@@ -952,79 +1020,34 @@ namespace ProjectPlanner.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("Domain.Entities.Issue", b =>
+            modelBuilder.Entity("Domain.Entities.IssueAttachment", b =>
                 {
-                    b.HasOne("Domain.Entities.User", "Assignee")
+                    b.HasOne("Domain.Entities.User", "DeletedBy")
                         .WithMany()
-                        .HasForeignKey("AssigneeId")
+                        .HasForeignKey("DeletedByUserId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("Domain.Entities.Epic", "Epic")
-                        .WithMany("Issues")
-                        .HasForeignKey("EpicId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.HasOne("Domain.Entities.Issue", "ParentIssue")
-                        .WithMany("SubIssues")
-                        .HasForeignKey("ParentIssueId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("Domain.Entities.Project", "Project")
-                        .WithMany("Issues")
-                        .HasForeignKey("ProjectId")
+                    b.HasOne("Issue", "Issue")
+                        .WithMany("Attachments")
+                        .HasForeignKey("IssueId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Domain.Entities.User", "Reporter")
+                    b.HasOne("Domain.Entities.User", "UploadedBy")
                         .WithMany()
-                        .HasForeignKey("ReporterId");
+                        .HasForeignKey("UploadedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("Domain.Entities.Sprint", "Sprint")
-                        .WithMany("Issues")
-                        .HasForeignKey("SprintId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                    b.Navigation("DeletedBy");
 
-                    b.OwnsOne("Domain.Entities.IssueTimeTracking", "TimeTracking", b1 =>
-                        {
-                            b1.Property<int>("IssueId")
-                                .HasColumnType("integer");
+                    b.Navigation("Issue");
 
-                            b1.Property<int?>("OriginalEstimateMinutes")
-                                .HasColumnType("integer");
-
-                            b1.Property<int?>("TimeRemainingMinutes")
-                                .HasColumnType("integer");
-
-                            b1.Property<int?>("TimeSpentMinutes")
-                                .HasColumnType("integer");
-
-                            b1.HasKey("IssueId");
-
-                            b1.ToTable("Issues", "app");
-
-                            b1.WithOwner()
-                                .HasForeignKey("IssueId");
-                        });
-
-                    b.Navigation("Assignee");
-
-                    b.Navigation("Epic");
-
-                    b.Navigation("ParentIssue");
-
-                    b.Navigation("Project");
-
-                    b.Navigation("Reporter");
-
-                    b.Navigation("Sprint");
-
-                    b.Navigation("TimeTracking")
-                        .IsRequired();
+                    b.Navigation("UploadedBy");
                 });
 
             modelBuilder.Entity("Domain.Entities.IssueCommit", b =>
                 {
-                    b.HasOne("Domain.Entities.Issue", "Issue")
+                    b.HasOne("Issue", "Issue")
                         .WithMany("Commits")
                         .HasForeignKey("IssueId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1041,7 +1064,7 @@ namespace ProjectPlanner.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Domain.Entities.Issue", "Issue")
+                    b.HasOne("Issue", "Issue")
                         .WithMany("History")
                         .HasForeignKey("IssueId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1054,7 +1077,7 @@ namespace ProjectPlanner.Infrastructure.Migrations
 
             modelBuilder.Entity("Domain.Entities.IssuePullRequest", b =>
                 {
-                    b.HasOne("Domain.Entities.Issue", "Issue")
+                    b.HasOne("Issue", "Issue")
                         .WithMany("PullRequests")
                         .HasForeignKey("IssueId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1128,7 +1151,7 @@ namespace ProjectPlanner.Infrastructure.Migrations
 
             modelBuilder.Entity("Domain.Entities.WorkLog", b =>
                 {
-                    b.HasOne("Domain.Entities.Issue", "Issue")
+                    b.HasOne("Issue", "Issue")
                         .WithMany()
                         .HasForeignKey("IssueId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1145,23 +1168,74 @@ namespace ProjectPlanner.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("IssueAttachment", b =>
+            modelBuilder.Entity("Issue", b =>
                 {
-                    b.HasOne("Domain.Entities.Issue", "Issue")
-                        .WithMany("Attachments")
-                        .HasForeignKey("IssueId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Domain.Entities.User", "UploadedBy")
+                    b.HasOne("Domain.Entities.User", "Assignee")
                         .WithMany()
-                        .HasForeignKey("UploadedById")
+                        .HasForeignKey("AssigneeId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Domain.Entities.Epic", "Epic")
+                        .WithMany("Issues")
+                        .HasForeignKey("EpicId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Issue", "ParentIssue")
+                        .WithMany("SubIssues")
+                        .HasForeignKey("ParentIssueId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Domain.Entities.Project", "Project")
+                        .WithMany("Issues")
+                        .HasForeignKey("ProjectId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Issue");
+                    b.HasOne("Domain.Entities.User", "Reporter")
+                        .WithMany()
+                        .HasForeignKey("ReporterId");
 
-                    b.Navigation("UploadedBy");
+                    b.HasOne("Domain.Entities.Sprint", "Sprint")
+                        .WithMany("Issues")
+                        .HasForeignKey("SprintId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.OwnsOne("IssueTimeTracking", "TimeTracking", b1 =>
+                        {
+                            b1.Property<int>("IssueId")
+                                .HasColumnType("integer");
+
+                            b1.Property<int?>("OriginalEstimateMinutes")
+                                .HasColumnType("integer");
+
+                            b1.Property<int?>("TimeRemainingMinutes")
+                                .HasColumnType("integer");
+
+                            b1.Property<int?>("TimeSpentMinutes")
+                                .HasColumnType("integer");
+
+                            b1.HasKey("IssueId");
+
+                            b1.ToTable("Issues", "app");
+
+                            b1.WithOwner()
+                                .HasForeignKey("IssueId");
+                        });
+
+                    b.Navigation("Assignee");
+
+                    b.Navigation("Epic");
+
+                    b.Navigation("ParentIssue");
+
+                    b.Navigation("Project");
+
+                    b.Navigation("Reporter");
+
+                    b.Navigation("Sprint");
+
+                    b.Navigation("TimeTracking")
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("IssueComment", b =>
@@ -1172,7 +1246,7 @@ namespace ProjectPlanner.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Domain.Entities.Issue", "Issue")
+                    b.HasOne("Issue", "Issue")
                         .WithMany("Comments")
                         .HasForeignKey("IssueId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1185,7 +1259,7 @@ namespace ProjectPlanner.Infrastructure.Migrations
 
             modelBuilder.Entity("IssueLabel", b =>
                 {
-                    b.HasOne("Domain.Entities.Issue", "Issue")
+                    b.HasOne("Issue", "Issue")
                         .WithMany("Labels")
                         .HasForeignKey("IssueId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1196,13 +1270,13 @@ namespace ProjectPlanner.Infrastructure.Migrations
 
             modelBuilder.Entity("IssueLink", b =>
                 {
-                    b.HasOne("Domain.Entities.Issue", "SourceIssue")
+                    b.HasOne("Issue", "SourceIssue")
                         .WithMany("OutgoingLinks")
                         .HasForeignKey("SourceIssueId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Domain.Entities.Issue", "TargetIssue")
+                    b.HasOne("Issue", "TargetIssue")
                         .WithMany("IncomingLinks")
                         .HasForeignKey("TargetIssueId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1216,27 +1290,6 @@ namespace ProjectPlanner.Infrastructure.Migrations
             modelBuilder.Entity("Domain.Entities.Epic", b =>
                 {
                     b.Navigation("Issues");
-                });
-
-            modelBuilder.Entity("Domain.Entities.Issue", b =>
-                {
-                    b.Navigation("Attachments");
-
-                    b.Navigation("Comments");
-
-                    b.Navigation("Commits");
-
-                    b.Navigation("History");
-
-                    b.Navigation("IncomingLinks");
-
-                    b.Navigation("Labels");
-
-                    b.Navigation("OutgoingLinks");
-
-                    b.Navigation("PullRequests");
-
-                    b.Navigation("SubIssues");
                 });
 
             modelBuilder.Entity("Domain.Entities.Project", b =>
@@ -1262,6 +1315,27 @@ namespace ProjectPlanner.Infrastructure.Migrations
                     b.Navigation("GitHubConnection");
 
                     b.Navigation("ProjectMemberships");
+                });
+
+            modelBuilder.Entity("Issue", b =>
+                {
+                    b.Navigation("Attachments");
+
+                    b.Navigation("Comments");
+
+                    b.Navigation("Commits");
+
+                    b.Navigation("History");
+
+                    b.Navigation("IncomingLinks");
+
+                    b.Navigation("Labels");
+
+                    b.Navigation("OutgoingLinks");
+
+                    b.Navigation("PullRequests");
+
+                    b.Navigation("SubIssues");
                 });
 #pragma warning restore 612, 618
         }

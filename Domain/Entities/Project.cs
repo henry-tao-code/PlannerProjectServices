@@ -20,7 +20,6 @@ public class Project
 
     public int CreatedByUserId { get; set; }
     public int? UpdatedByUserId { get; set; }
-    public uint RowVersion { get; set; }
 
     public ICollection<ProjectMember> ProjectMembers { get; set; } = [];
     public ICollection<Sprint> Sprints { get; set; } = [];

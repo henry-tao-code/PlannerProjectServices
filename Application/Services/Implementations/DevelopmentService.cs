@@ -1,7 +1,6 @@
 ﻿using Domain.Entities;
-using ProjectPlanner.Application.Common.Dto.Development;
+using ProjectPlanner.Application.Common.Dtos.Development;
 using ProjectPlanner.Application.Common.Interfaces.Persistence;
-using ProjectPlanner.Application.Common.Interfaces.Services;
 using System.Text.RegularExpressions;
 
 namespace ProjectPlanner.Application.Services.Implementations;

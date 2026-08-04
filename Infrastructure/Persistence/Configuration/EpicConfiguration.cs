@@ -43,8 +43,7 @@ public class EpicConfiguration : IEntityTypeConfiguration<Epic>
         builder.Property(e => e.UpdatedAt)
             .IsRequired();
 
-        builder.Property(e => e.RowVersion)
-            .IsRowVersion();
+        builder.Property<uint>("xmin").IsRowVersion();
 
         builder.HasOne(e => e.Project)
             .WithMany(p => p.Epics)

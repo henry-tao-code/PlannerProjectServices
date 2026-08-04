@@ -1,6 +1,4 @@
-﻿using Domain.Entities;
-
-public class IssueLabel
+﻿public class IssueLabel
 {
     public int Id { get; set; }
     public int IssueId { get; set; }

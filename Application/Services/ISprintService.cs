@@ -1,4 +1,4 @@
-﻿using ProjectPlanner.Application.Common.Dto.Sprint;
+﻿using ProjectPlanner.Application.Common.Dtos.Sprint;
 
 namespace ProjectPlanner.Application.Services;
 

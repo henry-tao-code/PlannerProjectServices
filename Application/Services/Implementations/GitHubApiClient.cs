@@ -1,11 +1,16 @@
 ﻿using Octokit;
-using ProjectPlanner.Application.Common.Dto.Development;
+using ProjectPlanner.Application.Common.Dtos.Development;
 
 namespace ProjectPlanner.Application.Services.Implementations;
 
 public class GitHubApiClient : IGitHubApiClient
 {
     private readonly IGitHubClient _client;
+
+    public GitHubApiClient(IGitHubClient client)
+    {
+        _client = client;
+    }
 
     public GitHubApiClient()
     {
@@ -69,5 +74,5 @@ public class GitHubApiClient : IGitHubApiClient
 }
 public class GitHubCommitSearchResult
 {
-    public IReadOnlyList<GitHubCommit> Items { get; set; } = new List<GitHubCommit>();
+    public IReadOnlyList<GitHubCommit> Items { get; set; } = [];
 }

@@ -1,5 +1,4 @@
-﻿using Domain.Entities;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using ProjectPlanner.Application.Common.Interfaces.Security;
 using System.IdentityModel.Tokens.Jwt;

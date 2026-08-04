@@ -29,8 +29,6 @@ public class Sprint
 
     public bool IsDeleted { get; private set; }
 
-    public uint RowVersion { get; set; }
-
     private void Touch() => UpdatedAt = DateTime.UtcNow;
 
     public static Sprint Create(

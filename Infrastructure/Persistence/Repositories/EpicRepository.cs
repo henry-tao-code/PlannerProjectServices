@@ -9,7 +9,7 @@ public class EpicRepository(ProjectPlannerDbContext context) : IEpicRepository
     public async Task<Epic?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
         return await context.Epics
-            .Include(e => e.Assignee) // Eagerly load assignee for UI username resolution
+            .Include(e => e.Assignee)
             .FirstOrDefaultAsync(e => e.Id == id && !e.IsDeleted, cancellationToken);
     }
 

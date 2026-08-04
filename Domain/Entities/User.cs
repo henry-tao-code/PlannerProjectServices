@@ -19,8 +19,6 @@ public class User
     public DateTime CreatedAt { get; init; }
     public DateTime UpdatedAt { get; set; }
 
-    public uint RowVersion { get; set; }
-
     public ICollection<ProjectMember> ProjectMemberships { get; set; } = [];
 
     public static User CreateLocal(string userName, string email, string passwordHash)

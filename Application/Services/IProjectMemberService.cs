@@ -1,5 +1,5 @@
 ﻿using Domain.Enums;
-using ProjectPlanner.Application.Common.Dto.ProjectMember;
+using ProjectPlanner.Application.Common.Dtos.ProjectMember;
 namespace ProjectPlanner.Application.Services;
 
 public interface IProjectMemberService

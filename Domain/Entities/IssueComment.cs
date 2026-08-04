@@ -16,5 +16,4 @@ public class IssueComment
     public DateTime? EditedAt { get; set; }
 
     public bool IsEdited => EditedAt.HasValue;
-    public uint RowVersion { get; set; }
 }

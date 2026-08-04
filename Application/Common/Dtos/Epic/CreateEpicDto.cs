@@ -1,0 +1,11 @@
+﻿namespace ProjectPlanner.Application.Common.Dtos.Epic;
+
+public record CreateEpicDto(
+    string Title,
+    string Summary,
+    string? Description,
+    int ProjectId,
+    int? AssigneeId,
+    DateTime? StartDate,
+    DateTime? DueDate
+);

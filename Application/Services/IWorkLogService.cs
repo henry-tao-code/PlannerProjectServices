@@ -1,5 +1,4 @@
-﻿using ProjectPlanner.Application.Common.Dto;
-using ProjectPlanner.Application.Common.Dto.WorkLog;
+﻿using ProjectPlanner.Application.Common.Dtos.WorkLog;
 
 namespace ProjectPlanner.Application.Services;
 

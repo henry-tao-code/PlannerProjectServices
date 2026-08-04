@@ -1,4 +1,4 @@
-﻿using ProjectPlanner.Application.Common.Dto.Development;
+﻿using ProjectPlanner.Application.Common.Dtos.Development;
 
 namespace ProjectPlanner.Application.Services;
 

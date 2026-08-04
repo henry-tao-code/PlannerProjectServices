@@ -1,4 +1,4 @@
-﻿using ProjectPlanner.Application.Common.Dto.Issue;
+﻿using ProjectPlanner.Application.Common.Dtos.Issue;
 
 namespace ProjectPlanner.Application.Services;
 

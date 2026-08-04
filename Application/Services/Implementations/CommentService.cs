@@ -1,5 +1,5 @@
-﻿using Domain.Entities;
-using ProjectPlanner.Application.Common.Dto.Comment;
+﻿using ProjectPlanner.Application.Common.Dto.Comment;
+using ProjectPlanner.Application.Common.Dtos.Comment;
 using ProjectPlanner.Application.Common.Interfaces.Persistence;
 
 namespace ProjectPlanner.Application.Services.Implementations;

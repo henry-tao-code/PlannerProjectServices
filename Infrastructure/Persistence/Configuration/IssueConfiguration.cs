@@ -1,5 +1,4 @@
-﻿using Domain.Entities;
-using Domain.Enums;
+﻿using Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -34,9 +33,7 @@ public class IssueConfiguration : IEntityTypeConfiguration<Issue>
         builder.Property(i => i.UpdatedAt).IsRequired();
 
         // ---------------- Concurrency ----------------
-        builder.Property(i => i.RowVersion)
-            .IsRowVersion()
-            .IsConcurrencyToken();
+        builder.Property<uint>("xmin").IsRowVersion();
 
         // ---------------- Relationships ----------------
 

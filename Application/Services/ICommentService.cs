@@ -1,5 +1,5 @@
-﻿using ProjectPlanner.Application.Common.Dto;
-using ProjectPlanner.Application.Common.Dto.Comment;
+﻿using ProjectPlanner.Application.Common.Dto.Comment;
+using ProjectPlanner.Application.Common.Dtos.Comment;
 
 namespace ProjectPlanner.Application.Services;
 
