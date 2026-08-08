@@ -67,7 +67,6 @@ public class RagService(
             {
                 ChunkId = result.EntityId,
                 DocumentName = result.Title,
-                IssueId = result.IssueId,
                 Content = result.Content,
                 Score = result.Score
             })

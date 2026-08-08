@@ -73,7 +73,6 @@ public class VectorSearchService(
                 EntityId = x.EntityId,
                 EntityType = x.EntityType,
                 ProjectId = x.ProjectId,
-                IssueId = x.IssueId,
                 Title = x.Title,
                 Content = x.Content,
 

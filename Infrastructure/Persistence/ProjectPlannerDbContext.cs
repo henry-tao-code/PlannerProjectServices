@@ -39,7 +39,7 @@ public class ProjectPlannerDbContext(DbContextOptions<ProjectPlannerDbContext> o
         modelBuilder.Entity<DocumentChunk>(entity =>
         {
             entity.Property(e => e.Embedding)
-                  .HasColumnType("vector(512)");
+                  .HasColumnType("vector(1024)");
 
             entity.HasIndex(e => e.Embedding)
                   .HasMethod("hnsw")

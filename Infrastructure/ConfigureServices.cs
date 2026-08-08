@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Npgsql;
 using OpenAI;
@@ -16,6 +17,7 @@ using ProjectPlanner.Application.Common.Interfaces.Storage;
 using ProjectPlanner.Application.Services;
 using ProjectPlanner.Application.Services.Implementations;
 using ProjectPlanner.Infrastructure.AI;
+using ProjectPlanner.Infrastructure.AI.Configurations;
 using ProjectPlanner.Infrastructure.Messaging;
 using ProjectPlanner.Infrastructure.Persistence;
 using ProjectPlanner.Infrastructure.Persistence.Repositories;
@@ -41,7 +43,7 @@ public static class ConfigureServices
         dataSourceBuilder.UseVector();
         var dataSource = dataSourceBuilder.Build();
 
-        services.AddDbContext<ProjectPlannerDbContext>(options =>
+        services.AddDbContextFactory<ProjectPlannerDbContext>(options =>
             options.UseNpgsql(
                 dataSource,
                 b =>
@@ -69,13 +71,9 @@ public static class ConfigureServices
         services.AddScoped<IWorkLogRepository, WorkLogRepository>();
         services.AddScoped<ISearchQueryRepository, SearchQueryRepository>();
         services.AddScoped<ISearchIndexRepository, SearchIndexRepository>();
+        services.AddScoped<IDocumentChunkRepository, DocumentChunkRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IFileStorageService, LocalFileStorageService>();
-
-        services.AddScoped<IDocumentChunkRepository, DocumentChunkRepository>();
-        services.AddScoped<ILlmService, LiteLlmService>();
-        services.AddScoped<IVectorSearchService, VectorSearchService>();
-        services.AddScoped<IKeywordSearchService, KeywordSearchService>();
 
         return services;
     }
@@ -127,6 +125,20 @@ public static class ConfigureServices
         this IServiceCollection services,
         IConfiguration configuration)
     {
+        services.Configure<LiteLlmOptions>(configuration.GetSection("LiteLLM"));
+
+        services.AddHttpClient<ILlmService, LiteLlmService>((sp, client) =>
+        {
+            var options = sp.GetRequiredService<IOptions<LiteLlmOptions>>().Value;
+            if (!string.IsNullOrWhiteSpace(options.BaseUrl))
+            {
+                client.BaseAddress = new Uri(options.BaseUrl);
+            }
+        });
+
+        services.AddScoped<IVectorSearchService, VectorSearchService>();
+        services.AddScoped<IKeywordSearchService, KeywordSearchService>();
+
         services.AddSingleton<IChatClient>(sp =>
         {
             var client = new OpenAIClient(

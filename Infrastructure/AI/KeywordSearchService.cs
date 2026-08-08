@@ -6,8 +6,7 @@ using ProjectPlanner.Infrastructure.Persistence;
 namespace ProjectPlanner.Infrastructure.AI;
 
 public class KeywordSearchService(
-    ProjectPlannerDbContext dbContext
-) : IKeywordSearchService
+    IDbContextFactory<ProjectPlannerDbContext> contextFactory) : IKeywordSearchService
 {
     public async Task<IReadOnlyList<SearchResultDto>> SearchAsync(
         string query,
@@ -21,6 +20,8 @@ public class KeywordSearchService(
         }
 
         var searchQuery = query.Trim();
+
+        await using var dbContext = await contextFactory.CreateDbContextAsync(cancellationToken);
 
         var queryable = dbContext.DocumentChunks
             .AsNoTracking()
@@ -38,7 +39,7 @@ public class KeywordSearchService(
                     "english",
                     x.Content)
                 .Matches(
-                    EF.Functions.PlainToTsQuery(
+                    EF.Functions.WebSearchToTsQuery(
                         "english",
                         searchQuery)))
             .Select(x => new
@@ -55,7 +56,7 @@ public class KeywordSearchService(
                         "english",
                         x.Content)
                     .Rank(
-                        EF.Functions.PlainToTsQuery(
+                        EF.Functions.WebSearchToTsQuery(
                             "english",
                             searchQuery))
             })
@@ -69,7 +70,6 @@ public class KeywordSearchService(
                 EntityId = x.EntityId,
                 EntityType = x.EntityType,
                 ProjectId = x.ProjectId,
-                IssueId = x.IssueId,
                 Title = x.Title,
                 Content = x.Content,
                 Score = x.Rank

@@ -26,6 +26,7 @@ builder.Services.AddProjectPlannerDbContext(builder.Configuration);
 builder.Services.AddDataRepositories();
 builder.Services.AddMessagingServices(builder.Configuration);
 builder.Services.AddSecurityServices(builder.Configuration);
+builder.Services.AddAiServices(builder.Configuration);
 
 builder.Services.Configure<FileStorageOptions>(
     builder.Configuration.GetSection("FileStorage"));
