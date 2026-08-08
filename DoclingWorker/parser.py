@@ -11,7 +11,6 @@ converter = DocumentConverter()
 chunker = HybridChunker()
 logger.info("Docling parser ready.")
 
-
 def parse_and_chunk_document(file_path: str | Path):
     path = Path(file_path)
 

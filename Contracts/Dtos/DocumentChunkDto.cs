@@ -1,6 +1,6 @@
 ﻿namespace Contracts.Dtos;
 
-public sealed record DocumentChunkDto
+public record DocumentChunkDto
 {
     public int Index { get; init; }
     public string Content { get; init; } = string.Empty;

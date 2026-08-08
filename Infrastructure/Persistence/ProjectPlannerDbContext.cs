@@ -34,6 +34,18 @@ public class ProjectPlannerDbContext(DbContextOptions<ProjectPlannerDbContext> o
             typeof(ProjectPlannerDbContext).Assembly
         );
 
+        modelBuilder.HasPostgresExtension("vector");
+
+        modelBuilder.Entity<DocumentChunk>(entity =>
+        {
+            entity.Property(e => e.Embedding)
+                  .HasColumnType("vector(512)");
+
+            entity.HasIndex(e => e.Embedding)
+                  .HasMethod("hnsw")
+                  .HasOperators("vector_cosine_ops");
+        });
+
         modelBuilder.Entity<User>()
             .HasQueryFilter(u => !u.IsDeleted);
 
@@ -42,6 +54,9 @@ public class ProjectPlannerDbContext(DbContextOptions<ProjectPlannerDbContext> o
 
         modelBuilder.Entity<Sprint>()
             .HasQueryFilter(s => !s.IsDeleted);
+
+        modelBuilder.Entity<Issue>()
+            .HasQueryFilter(i => !i.IsDeleted);
 
         modelBuilder.HasPostgresExtension("pg_trgm");
     }

@@ -9,7 +9,7 @@ using System.Text.Json;
 
 namespace ProjectPlanner.Infrastructure.Messaging;
 
-public sealed class DocumentParsedConsumerService(
+public class DocumentParsedConsumerService(
     IConfiguration configuration,
     IServiceScopeFactory scopeFactory,
     ILogger<DocumentParsedConsumerService> logger)
@@ -41,7 +41,7 @@ public sealed class DocumentParsedConsumerService(
         using var consumer = new ConsumerBuilder<Ignore, string>(consumerConfig).Build();
 
         consumer.Subscribe(topic);
-        logger.LogInformation("Listening to Kafka topic {Topic}", topic);
+        // logger.LogInformation("Listening to Kafka topic {Topic}", topic);
 
         try
         {
@@ -73,7 +73,7 @@ public sealed class DocumentParsedConsumerService(
 
                     // Commit only after successful processing
                     consumer.Commit(result);
-                    logger.LogInformation("Processed attachment {AttachmentId}", parsedEvent.AttachmentId);
+                    // logger.LogInformation("Processed attachment {AttachmentId}", parsedEvent.AttachmentId);
                 }
                 catch (JsonException ex)
                 {

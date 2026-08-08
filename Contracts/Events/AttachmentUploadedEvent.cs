@@ -1,6 +1,6 @@
 ﻿namespace Contracts.Events;
 
-public sealed record AttachmentUploadedEvent
+public record AttachmentUploadedEvent
 (
     long AttachmentId,
     int IssueId,

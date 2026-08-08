@@ -4,7 +4,7 @@ using ProjectPlanner.Application.Common.Interfaces.Persistence;
 
 namespace ProjectPlanner.Infrastructure.Persistence.Repositories;
 
-public sealed class DocumentChunkRepository(
+public class DocumentChunkRepository(
     ProjectPlannerDbContext dbContext)
     : IDocumentChunkRepository
 {

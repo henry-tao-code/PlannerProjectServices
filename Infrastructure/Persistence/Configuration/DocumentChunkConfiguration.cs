@@ -1,6 +1,7 @@
 ﻿using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using NpgsqlTypes;
 
 namespace ProjectPlanner.Infrastructure.Persistence.Configuration;
 
@@ -17,6 +18,14 @@ public class DocumentChunkConfiguration
         builder.Property(x => x.Content)
             .HasMaxLength(8000)
             .IsRequired();
+
+        builder.Property<NpgsqlTsVector>("SearchVector")
+            .HasComputedColumnSql(
+                "to_tsvector('english', coalesce(\"Content\", ''))",
+                stored: true);
+
+        builder.HasIndex("SearchVector")
+            .HasMethod("GIN");
 
         builder.HasIndex(x => new
         {

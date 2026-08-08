@@ -2,7 +2,7 @@
 
 namespace ProjectPlanner.Infrastructure.AI.Models;
 
-internal sealed class TeiEmbedRequest
+internal sealed class TeiEmbedRequestDto
 {
     [JsonPropertyName("inputs")]
     public List<string> Inputs { get; set; } = [];

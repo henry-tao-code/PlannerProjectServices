@@ -1,6 +1,6 @@
 ﻿namespace Contracts.Dtos;
 
-public sealed record EmbeddingRequestDto
+public record EmbeddingRequestDto
 {
     public IReadOnlyList<string> Inputs { get; init; } = [];
     public string? Model { get; init; }

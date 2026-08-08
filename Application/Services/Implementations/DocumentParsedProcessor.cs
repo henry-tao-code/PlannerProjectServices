@@ -6,7 +6,7 @@ using ProjectPlanner.Application.Common.Interfaces.Persistence;
 
 namespace ProjectPlanner.Application.Services.Implementations;
 
-public sealed class DocumentParsedProcessor(
+public class DocumentParsedProcessor(
     IDocumentChunkRepository chunkRepository,
     ITEIEmbeddingService embeddingService,
     IUnitOfWork unitOfWork)
@@ -37,9 +37,7 @@ public sealed class DocumentParsedProcessor(
         var embeddingRequest =
             new EmbeddingRequestDto
             {
-                Inputs = chunks
-                    .Select(x => x.Content)
-                    .ToList(),
+                Inputs = [.. chunks.Select(x => x.Content)],
 
                 Truncate = true
             };
@@ -58,8 +56,7 @@ public sealed class DocumentParsedProcessor(
 
         for (int i = 0; i < chunks.Count; i++)
         {
-            chunks[i].Embedding =
-                response.Embeddings[i];
+            chunks[i].Embedding = new Pgvector.Vector(response.Embeddings[i]);
         }
 
 

@@ -5,26 +5,61 @@ using System.Net.Http.Json;
 
 namespace ProjectPlanner.Infrastructure.AI;
 
-public class TeiEmbeddingService(HttpClient httpClient) : ITEIEmbeddingService
+public class TeiEmbeddingService(
+    HttpClient httpClient
+    // ILogger<TeiEmbeddingService> logger
+    ) : ITEIEmbeddingService
 {
+    private const int MaxBatchSize = 32;
+
     public async Task<EmbeddingResponseDto> GetEmbeddingsAsync(
         EmbeddingRequestDto request,
         CancellationToken cancellationToken = default)
     {
-        var teiPayload = new TeiEmbedRequest
+        if (request?.Inputs == null || request.Inputs.Count == 0 || request.Inputs.All(string.IsNullOrWhiteSpace))
         {
-            Inputs = [.. request.Inputs],
-            Truncate = request.Truncate
-        };
+            return new EmbeddingResponseDto { Embeddings = [] };
+        }
 
-        var response = await httpClient.PostAsJsonAsync("embed", teiPayload, cancellationToken);
-        response.EnsureSuccessStatusCode();
+        var allEmbeddings = new List<float[]>();
+        var batches = request.Inputs.Chunk(MaxBatchSize);
 
-        var vectors = await response.Content.ReadFromJsonAsync<List<float[]>>(cancellationToken: cancellationToken);
+        foreach (var batch in batches)
+        {
+            var teiPayload = new TeiEmbedRequestDto
+            {
+                Inputs = [.. batch],
+                Truncate = request.Truncate
+            };
+
+            var response = await httpClient.PostAsJsonAsync("embed", teiPayload, cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorBody = await response.Content.ReadAsStringAsync(cancellationToken);
+
+                // logger.LogError(
+                //     "TEI embedding request failed with status code {StatusCode}. Details: {ErrorDetails}",
+                //     response.StatusCode,
+                //     errorBody);
+
+                throw new HttpRequestException(
+                    $"TEI HTTP {(int)response.StatusCode} ({response.StatusCode}): {errorBody}",
+                    inner: null,
+                    statusCode: response.StatusCode);
+            }
+
+            var vectors = await response.Content.ReadFromJsonAsync<List<float[]>>(cancellationToken: cancellationToken);
+
+            if (vectors != null)
+            {
+                allEmbeddings.AddRange(vectors);
+            }
+        }
 
         return new EmbeddingResponseDto
         {
-            Embeddings = vectors ?? []
+            Embeddings = allEmbeddings
         };
     }
 }

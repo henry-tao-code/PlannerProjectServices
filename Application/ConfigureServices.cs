@@ -27,6 +27,10 @@ static public class ConfigureServices
         services.AddScoped<IGitHubApiClient, GitHubApiClient>();
 
         services.AddScoped<IDocumentParsedProcessor, DocumentParsedProcessor>();
+        services.AddScoped<IQueryRouterService, QueryRouterService>();
+        services.AddScoped<IRetrievalService, RetrievalService>();
+        services.AddScoped<IPromptBuilderService, PromptBuilderService>();
+        services.AddScoped<IRagService, RagService>();
 
         services.AddValidatorsFromAssemblyContaining<CreateUserDtoValidator>();
 

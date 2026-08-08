@@ -1,5 +1,5 @@
-﻿using ProjectPlanner.Application.Common.Interfaces.Persistence;
-using ProjectPlanner.Application.Services.Implementations;
+﻿using ProjectPlanner.Application.Common.Dtos.AI;
+using ProjectPlanner.Application.Services;
 
 namespace ProjectPlanner.API.Endpoints;
 
@@ -7,19 +7,35 @@ public static class AiEndpoints
 {
     public static IEndpointRouteBuilder MapAiEndpoints(this IEndpointRouteBuilder app)
     {
-        app.MapPost("/api/issues/{id:int}/generate-criteria", async (
-            int id,
-            IIssueRepository issueRepo,
-            AiAssistantService aiService,
-            CancellationToken ct) =>
+        var group = app.MapGroup("api/rag")
+            .WithTags("RAG");
+
+        group.MapPost("/query", async (
+            RagQueryRequestDto request,
+            IRagService ragService,
+            CancellationToken cancellationToken) =>
         {
-            var issue = await issueRepo.GetByIdAsync(id, ct);
-            if (issue is null) return Results.NotFound();
+            var response = await ragService.QueryAsync(request, cancellationToken);
+            return Results.Ok(response);
+        })
+        .WithName("QueryRag")
+        .Produces<RagQueryResponseDto>(StatusCodes.Status200OK);
 
-            var criteria = await aiService.GenerateAcceptanceCriteriaAsync(issue.Title, issue.Description, ct);
+        //app.MapPost("/api/issues/{id:int}/generate-criteria", async (
+        //    int id,
+        //    IIssueRepository issueRepo,
+        //    AiAssistantService aiService,
+        //    CancellationToken ct) =>
+        //{
+        //    var issue = await issueRepo.GetByIdAsync(id, ct);
+        //    if (issue is null) return Results.NotFound();
 
-            return Results.Ok(new { Criteria = criteria });
-        });
+        //    var criteria = await aiService.GenerateAcceptanceCriteriaAsync(issue.Title, issue.Description ?? string.Empty, ct);
+
+        //    return Results.Ok(new { Criteria = criteria });
+        //});
+
         return app;
+
     }
 }

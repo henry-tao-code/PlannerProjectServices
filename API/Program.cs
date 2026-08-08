@@ -32,7 +32,6 @@ builder.Services.Configure<FileStorageOptions>(
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
@@ -44,8 +43,6 @@ if (app.Environment.IsDevelopment())
         options.SwaggerEndpoint("/swagger/v1/swagger.json", "ProjectPlanner API v1");
         options.RoutePrefix = "swagger";
     });
-
-    app.MapOpenApi();
 }
 
 app.UseHttpsRedirection();

@@ -12,7 +12,6 @@ logger = logging.getLogger("docling-worker.consumer")
 
 BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "kafka:29092")
 
-
 def create_consumer(retries: int = 10, delay: float = 3.0) -> KafkaConsumer:
     """
     Creates and returns a KafkaConsumer instance with startup retry logic.

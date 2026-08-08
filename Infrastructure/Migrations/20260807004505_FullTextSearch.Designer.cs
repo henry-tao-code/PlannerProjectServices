@@ -2,10 +2,10 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using NpgsqlTypes;
-using Pgvector;
 using ProjectPlanner.Infrastructure.Persistence;
 
 #nullable disable
@@ -13,18 +13,19 @@ using ProjectPlanner.Infrastructure.Persistence;
 namespace ProjectPlanner.Infrastructure.Migrations
 {
     [DbContext(typeof(ProjectPlannerDbContext))]
-    partial class ProjectPlannerDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260807004505_FullTextSearch")]
+    partial class FullTextSearch
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
                 .HasDefaultSchema("app")
-                .HasAnnotation("ProductVersion", "10.0.10")
+                .HasAnnotation("ProductVersion", "10.0.8")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "pg_trgm");
-            NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "vector");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
             modelBuilder.Entity("Domain.Entities.DocumentChunk", b =>
@@ -49,8 +50,8 @@ namespace ProjectPlanner.Infrastructure.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Vector>("Embedding")
-                        .HasColumnType("vector(512)");
+                    b.PrimitiveCollection<float[]>("Embedding")
+                        .HasColumnType("real[]");
 
                     b.Property<NpgsqlTsVector>("SearchVector")
                         .ValueGeneratedOnAddOrUpdate()
@@ -58,11 +59,6 @@ namespace ProjectPlanner.Infrastructure.Migrations
                         .HasComputedColumnSql("to_tsvector('english', coalesce(\"Content\", ''))", true);
 
                     b.HasKey("Id");
-
-                    b.HasIndex("Embedding");
-
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Embedding"), "hnsw");
-                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("Embedding"), new[] { "vector_cosine_ops" });
 
                     b.HasIndex("SearchVector");
 

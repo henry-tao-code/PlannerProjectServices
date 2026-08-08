@@ -6,6 +6,7 @@ using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
+using Npgsql;
 using OpenAI;
 using ProjectPlanner.Application.Common.Interfaces.AI;
 using ProjectPlanner.Application.Common.Interfaces.Messaging;
@@ -33,10 +34,21 @@ public static class ConfigureServices
     {
         AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
+        var connectionString = configuration.GetConnectionString("DefaultConnection")
+            ?? throw new InvalidOperationException("Connection string 'DefaultConnection' is missing from configuration.");
+
+        var dataSourceBuilder = new NpgsqlDataSourceBuilder(connectionString);
+        dataSourceBuilder.UseVector();
+        var dataSource = dataSourceBuilder.Build();
+
         services.AddDbContext<ProjectPlannerDbContext>(options =>
             options.UseNpgsql(
-                configuration.GetConnectionString("DefaultConnection"),
-                b => b.MigrationsAssembly("ProjectPlanner.Infrastructure")));
+                dataSource,
+                b =>
+                {
+                    b.UseVector();
+                    b.MigrationsAssembly("ProjectPlanner.Infrastructure");
+                }));
 
         return services;
     }
@@ -59,7 +71,11 @@ public static class ConfigureServices
         services.AddScoped<ISearchIndexRepository, SearchIndexRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IFileStorageService, LocalFileStorageService>();
+
         services.AddScoped<IDocumentChunkRepository, DocumentChunkRepository>();
+        services.AddScoped<ILlmService, LiteLlmService>();
+        services.AddScoped<IVectorSearchService, VectorSearchService>();
+        services.AddScoped<IKeywordSearchService, KeywordSearchService>();
 
         return services;
     }
@@ -129,8 +145,8 @@ public static class ConfigureServices
     }
 
     public static IServiceCollection AddMessagingServices(
-    this IServiceCollection services,
-    IConfiguration configuration)
+        this IServiceCollection services,
+        IConfiguration configuration)
     {
         var teiUrl = configuration["Tei:BaseUrl"] ?? "http://localhost:8080";
         services.AddHttpClient<ITEIEmbeddingService, TeiEmbeddingService>(client =>

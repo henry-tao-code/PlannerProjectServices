@@ -2,7 +2,7 @@
 
 namespace Contracts.Events;
 
-public sealed record DocumentParsedEvent
+public record DocumentParsedEvent
 {
     public int Version { get; init; } = 1;
     public long AttachmentId { get; init; }

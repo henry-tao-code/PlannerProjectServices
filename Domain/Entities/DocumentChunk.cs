@@ -1,4 +1,6 @@
-﻿namespace Domain.Entities;
+﻿using Pgvector;
+
+namespace Domain.Entities;
 
 public class DocumentChunk
 {
@@ -7,6 +9,6 @@ public class DocumentChunk
     public IssueAttachment Attachment { get; set; } = null!;
     public int ChunkIndex { get; set; }
     public string Content { get; set; } = null!;
-    public float[]? Embedding { get; set; }
+    public Vector? Embedding { get; set; }
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 }
