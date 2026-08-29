@@ -29,6 +29,8 @@ public class IssueAttachment
     public DateTime? ProcessedAt { get; set; }
     public string? ProcessingError { get; set; }
 
+    public string? DocumentStructureJson { get; set; }
+
     public bool IsDeleted { get; set; }
     public DateTime? DeletedAt { get; set; }
 

@@ -7,5 +7,8 @@ public class CombinedResultDto
     public int ProjectId { get; init; }
     public string Title { get; init; } = string.Empty;
     public string Content { get; init; } = string.Empty;
+    public string ChunkType { get; init; } = "content";
+    public int? PageNumber { get; init; }
+    public int? TableIndex { get; init; }
     public double Score { get; set; }
 }

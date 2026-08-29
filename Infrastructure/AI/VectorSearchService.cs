@@ -10,7 +10,9 @@ namespace ProjectPlanner.Infrastructure.AI;
 
 public class VectorSearchService(
     ProjectPlannerDbContext dbContext,
-    ITEIEmbeddingService embeddingService) : IVectorSearchService
+    ITEIEmbeddingService embeddingService
+    // ,ILogger<VectorSearchService> logger
+    ) : IVectorSearchService
 {
     public async Task<IReadOnlyList<SearchResultDto>> SearchAsync(
         string query,
@@ -28,6 +30,8 @@ public class VectorSearchService(
             Inputs = [query.Trim()],
             Truncate = true
         };
+
+        // var stopwatch = Stopwatch.StartNew();
 
         var embeddingResponse = await embeddingService.GetEmbeddingsAsync(
             request,
@@ -60,6 +64,9 @@ public class VectorSearchService(
                 IssueId = (int?)x.Attachment.IssueId,
                 Title = x.Attachment.OriginalFileName,
                 x.Content,
+                x.ChunkType,
+                x.PageNumber,
+                x.TableIndex,
 
                 Distance = x.Embedding!.CosineDistance(queryVector)
             })
@@ -67,16 +74,20 @@ public class VectorSearchService(
             .Take(topK)
             .ToListAsync(cancellationToken);
 
-        return [.. results
-            .Select(x => new SearchResultDto
-            {
-                EntityId = x.EntityId,
-                EntityType = x.EntityType,
-                ProjectId = x.ProjectId,
-                Title = x.Title,
-                Content = x.Content,
+        // stopwatch.Stop();
 
-                Score = 1.0 - x.Distance
+        // logger.LogWarning(
+        //         "RAG retrieval through vector search in {ElapsedMs}ms",
+        //         stopwatch.ElapsedMilliseconds);
+
+        return [.. results
+            .Select(x => new SearchResultDto(
+                x.EntityId, x.EntityType, string.Empty, x.Title, x.Content,
+                x.ProjectId, null, null, null, null, 1.0 - x.Distance)
+            {
+                ChunkType = x.ChunkType,
+                PageNumber = x.PageNumber,
+                TableIndex = x.TableIndex
             })];
     }
 }

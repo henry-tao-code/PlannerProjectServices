@@ -37,12 +37,18 @@ def get_producer(retries: int = 10, delay: float = 3.0) -> KafkaProducer:
     raise RuntimeError(f"Could not connect Kafka Producer to {BOOTSTRAP_SERVERS}")
 
 
-def send_parsed_event(attachment_id: int, chunks: List[Dict[str, Any]]) -> None:
+def send_parsed_event(
+    attachment_id: int,
+    chunks: List[Dict[str, Any]],
+    structure: Dict[str, Any] | None = None,
+) -> None:
     producer = get_producer()
     payload = {
         "attachmentId": attachment_id,
         "chunks": chunks
     }
+    if structure is not None:
+        payload["structure"] = structure
     
     topic = "document.parsed"
     logger.info("Publishing parsed event for attachmentId: %d to topic: %s", attachment_id, topic)

@@ -1,16 +1,19 @@
 ﻿using Contracts.Dtos;
 using ProjectPlanner.Application.Common.Interfaces.AI;
+using ProjectPlanner.Infrastructure.AI.Configurations;
 using ProjectPlanner.Infrastructure.AI.Models;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System.Net.Http.Json;
 
 namespace ProjectPlanner.Infrastructure.AI;
 
 public class TeiEmbeddingService(
-    HttpClient httpClient
-    // ILogger<TeiEmbeddingService> logger
-    ) : ITEIEmbeddingService
+    HttpClient httpClient,
+    IOptions<TeiOptions> options,
+    ILogger<TeiEmbeddingService> logger) : ITEIEmbeddingService
 {
-    private const int MaxBatchSize = 32;
+    private readonly TeiOptions _options = options.Value;
 
     public async Task<EmbeddingResponseDto> GetEmbeddingsAsync(
         EmbeddingRequestDto request,
@@ -22,26 +25,27 @@ public class TeiEmbeddingService(
         }
 
         var allEmbeddings = new List<float[]>();
-        var batches = request.Inputs.Chunk(MaxBatchSize);
+        var batchSize = Math.Clamp(_options.BatchSize, 1, 128);
+        var batches = request.Inputs.Chunk(batchSize).ToArray();
 
-        foreach (var batch in batches)
+        for (var batchIndex = 0; batchIndex < batches.Length; batchIndex++)
         {
+            var batch = batches[batchIndex];
             var teiPayload = new TeiEmbedRequestDto
             {
                 Inputs = [.. batch],
                 Truncate = request.Truncate
             };
 
-            var response = await httpClient.PostAsJsonAsync("embed", teiPayload, cancellationToken);
+            using var response = await SendWithRetryAsync(
+                teiPayload,
+                batchIndex + 1,
+                batches.Length,
+                cancellationToken);
 
             if (!response.IsSuccessStatusCode)
             {
                 var errorBody = await response.Content.ReadAsStringAsync(cancellationToken);
-
-                // logger.LogError(
-                //     "TEI embedding request failed with status code {StatusCode}. Details: {ErrorDetails}",
-                //     response.StatusCode,
-                //     errorBody);
 
                 throw new HttpRequestException(
                     $"TEI HTTP {(int)response.StatusCode} ({response.StatusCode}): {errorBody}",
@@ -61,5 +65,57 @@ public class TeiEmbeddingService(
         {
             Embeddings = allEmbeddings
         };
+    }
+
+    private async Task<HttpResponseMessage> SendWithRetryAsync(
+        TeiEmbedRequestDto payload,
+        int batchNumber,
+        int batchCount,
+        CancellationToken cancellationToken)
+    {
+        var maxAttempts = Math.Max(1, _options.MaxRetries + 1);
+
+        for (var attempt = 1; ; attempt++)
+        {
+            var startedAt = DateTime.UtcNow;
+            try
+            {
+                var response = await httpClient.PostAsJsonAsync("embed", payload, cancellationToken);
+                var transientStatus = response.StatusCode is
+                    System.Net.HttpStatusCode.RequestTimeout or
+                    System.Net.HttpStatusCode.TooManyRequests ||
+                    (int)response.StatusCode >= 500;
+
+                if (!transientStatus || attempt >= maxAttempts)
+                {
+                    logger.LogInformation(
+                        "TEI batch {BatchNumber}/{BatchCount} completed in {ElapsedMs} ms with HTTP {StatusCode}",
+                        batchNumber, batchCount, (DateTime.UtcNow - startedAt).TotalMilliseconds,
+                        (int)response.StatusCode);
+                    return response;
+                }
+
+                response.Dispose();
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex) when (
+                attempt < maxAttempts &&
+                ex is HttpRequestException or TaskCanceledException)
+            {
+                logger.LogWarning(
+                    ex,
+                    "Transient TEI failure for batch {BatchNumber}/{BatchCount}, attempt {Attempt}/{MaxAttempts}",
+                    batchNumber, batchCount, attempt, maxAttempts);
+            }
+
+            var exponentialDelay = _options.RetryBaseDelayMilliseconds * Math.Pow(2, attempt - 1);
+            var jitter = Random.Shared.Next(0, 250);
+            await Task.Delay(
+                TimeSpan.FromMilliseconds(Math.Min(exponentialDelay + jitter, 10_000)),
+                cancellationToken);
+        }
     }
 }

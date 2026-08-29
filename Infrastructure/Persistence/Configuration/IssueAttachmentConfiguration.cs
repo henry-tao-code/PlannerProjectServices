@@ -37,6 +37,9 @@ public class IssueAttachmentConfiguration : IEntityTypeConfiguration<IssueAttach
         builder.Property(a => a.Sha256Hash)
             .HasMaxLength(64);
 
+        builder.Property(a => a.DocumentStructureJson)
+            .HasColumnType("jsonb");
+
         builder.Property(a => a.UploadedAt)
             .IsRequired();
 

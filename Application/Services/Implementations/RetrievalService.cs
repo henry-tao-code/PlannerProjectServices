@@ -6,7 +6,7 @@ using ProjectPlanner.Application.Common.Interfaces.AI;
 namespace ProjectPlanner.Application.Services.Implementations;
 
 public class RetrievalService(
-    IKeywordSearchService keywordSearchService,
+    IBm25SearchService bm25SearchService,
     IVectorSearchService vectorSearchService
     ) : IRetrievalService
 {
@@ -21,8 +21,8 @@ public class RetrievalService(
             return [];
         }
 
-        var keywordTask = route.UseKeywordSearch
-            ? keywordSearchService.SearchAsync(
+        var bm25Task = route.UseKeywordSearch
+            ? bm25SearchService.SearchAsync(
                 query,
                 projectId,
                 route.TopK,
@@ -37,19 +37,19 @@ public class RetrievalService(
                 cancellationToken)
             : Task.FromResult<IReadOnlyList<SearchResultDto>>([]);
 
-        await Task.WhenAll(keywordTask, vectorTask);
+        await Task.WhenAll(bm25Task, vectorTask);
 
-        var keywordResults = await keywordTask;
+        var bm25Results = await bm25Task;
         var vectorResults = await vectorTask;
 
         return CombineResults(
-            keywordResults,
+            bm25Results,
             vectorResults,
             route.TopK);
     }
 
     private static IReadOnlyList<SearchResultDto> CombineResults(
-        IReadOnlyList<SearchResultDto> keywordResults,
+        IReadOnlyList<SearchResultDto> bm25Results,
         IReadOnlyList<SearchResultDto> vectorResults,
         int topK)
     {
@@ -59,7 +59,7 @@ public class RetrievalService(
 
         AddResults(
             combined,
-            keywordResults,
+            bm25Results,
             rrfK);
 
         AddResults(
@@ -69,15 +69,23 @@ public class RetrievalService(
 
         return [.. combined.Values
             .OrderByDescending(x => x.Score)
-            .Take(topK)
-            .Select(x => new SearchResultDto
+             .Take(topK)
+            .Select(x => new SearchResultDto(
+                x.EntityId,
+                x.EntityType,
+                string.Empty,
+                x.Title,
+                x.Content,
+                x.ProjectId,
+                null,
+                null,
+                null,
+                null,
+                x.Score)
             {
-                EntityId = x.EntityId,
-                EntityType = x.EntityType,
-                ProjectId = x.ProjectId,
-                Title = x.Title,
-                Content = x.Content,
-                Score = x.Score
+                ChunkType = x.ChunkType,
+                PageNumber = x.PageNumber,
+                TableIndex = x.TableIndex
             })];
     }
 
@@ -101,7 +109,10 @@ public class RetrievalService(
                     EntityType = result.EntityType,
                     ProjectId = result.ProjectId,
                     Title = result.Title,
-                    Content = result.Content
+                    Content = result.Content ?? string.Empty,
+                    ChunkType = result.ChunkType,
+                    PageNumber = result.PageNumber,
+                    TableIndex = result.TableIndex
                 };
 
                 combined[key] = existing;

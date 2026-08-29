@@ -27,6 +27,7 @@ builder.Services.AddDataRepositories();
 builder.Services.AddMessagingServices(builder.Configuration);
 builder.Services.AddSecurityServices(builder.Configuration);
 builder.Services.AddAiServices(builder.Configuration);
+builder.Services.AddSearchServices(builder.Configuration);
 
 builder.Services.Configure<FileStorageOptions>(
     builder.Configuration.GetSection("FileStorage"));
@@ -58,5 +59,6 @@ app.UseAuthorization();
 app.UseStaticFiles();
 
 app.MapAllApplicationEndpoints();
+app.MapHealthChecks("/health");
 
 app.Run();

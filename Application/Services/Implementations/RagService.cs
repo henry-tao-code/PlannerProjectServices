@@ -1,7 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
-using ProjectPlanner.Application.Common.Dtos.AI;
+﻿using ProjectPlanner.Application.Common.Dtos.AI;
 using ProjectPlanner.Application.Common.Interfaces.AI;
-using System.Diagnostics;
 
 namespace ProjectPlanner.Application.Services.Implementations;
 
@@ -9,8 +7,8 @@ public class RagService(
     IQueryRouterService queryRouterService,
     IRetrievalService retrievalService,
     IPromptBuilderService promptBuilderService,
-    ILlmService llmService,
-    ILogger<RagService> logger
+    ILlmService llmService
+    //, ILogger<RagService> logger
     ) : IRagService
 {
     public async Task<RagQueryResponseDto> QueryAsync(
@@ -28,47 +26,40 @@ public class RagService(
 
         var route = queryRouterService.Route(request.Query);
 
-        logger.LogInformation(
-            "Executing RAG retrieval for Query: '{Query}', Intent: {Intent}, ProjectId: {ProjectId}",
-            request.Query,
-            route.Intent,
-            request.ProjectId);
-
-        var stopwatch = Stopwatch.StartNew();
-
         var results = await retrievalService.SearchAsync(
             request.Query,
             route,
             request.ProjectId,
             cancellationToken);
 
-        stopwatch.Stop();
-
-        if (results.Count == 0)
-        {
-            logger.LogWarning(
-                "RAG retrieval returned 0 results in {ElapsedMs}ms for Query: '{Query}', Intent: {Intent}, ProjectId: {ProjectId}",
-                stopwatch.ElapsedMilliseconds,
-                request.Query,
-                route.Intent,
-                request.ProjectId);
-        }
-        else
-        {
-            logger.LogInformation(
-                "RAG retrieval found {Count} results in {ElapsedMs}ms (Top Score: {TopScore})",
-                results.Count,
-                stopwatch.ElapsedMilliseconds,
-                results.Max(r => r.Score));
-        }
+        //if (results.Count == 0)
+        //{
+        //    logger.LogWarning(
+        //        "RAG retrieval returned 0 results in {ElapsedMs}ms for Query: '{Query}', Intent: {Intent}, ProjectId: {ProjectId}",
+        //        stopwatch.ElapsedMilliseconds,
+        //        request.Query,
+        //        route.Intent,
+        //        request.ProjectId);
+        //}
+        //else
+        //{
+        //    logger.LogInformation(
+        //        "RAG retrieval found {Count} results in {ElapsedMs}ms (Top Score: {TopScore})",
+        //        results.Count,
+        //        stopwatch.ElapsedMilliseconds,
+        //       results.Max(r => r.Score));
+        //} 
 
         var sources = results
             .Select(result => new RagSourceDto
             {
                 ChunkId = result.EntityId,
                 DocumentName = result.Title,
-                Content = result.Content,
-                Score = result.Score
+                Content = result.Content ?? string.Empty,
+                Score = result.Score ?? 0,
+                ChunkType = result.ChunkType,
+                PageNumber = result.PageNumber,
+                TableIndex = result.TableIndex
             })
             .ToList();
 

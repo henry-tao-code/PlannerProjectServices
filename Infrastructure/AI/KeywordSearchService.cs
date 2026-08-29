@@ -65,14 +65,8 @@ public class KeywordSearchService(
             .ToListAsync(cancellationToken);
 
         return [.. results
-            .Select(x => new SearchResultDto
-            {
-                EntityId = x.EntityId,
-                EntityType = x.EntityType,
-                ProjectId = x.ProjectId,
-                Title = x.Title,
-                Content = x.Content,
-                Score = x.Rank
-            })];
+            .Select(x => new SearchResultDto(
+                x.EntityId, x.EntityType, string.Empty, x.Title, x.Content,
+                x.ProjectId, null, null, null, null, x.Rank))];
     }
 }

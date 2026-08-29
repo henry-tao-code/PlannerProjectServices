@@ -17,6 +17,7 @@ public static class EndpointExtensions
         app.MapIssueAttachmentEndpoints();
         app.MapWorkLogEndpoints();
         app.MapHistoryEndpoints();
+        app.MapSearchEndpoints();
         app.MapAiEndpoints();
 
         return app;

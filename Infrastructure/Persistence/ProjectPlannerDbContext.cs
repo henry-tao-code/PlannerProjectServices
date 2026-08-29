@@ -21,7 +21,6 @@ public class ProjectPlannerDbContext(DbContextOptions<ProjectPlannerDbContext> o
     public DbSet<IssuePullRequest> IssuePullRequests => Set<IssuePullRequest>();
     public DbSet<IssueAttachment> IssueAttachments => Set<IssueAttachment>();
     public DbSet<WorkLog> WorkLogs => Set<WorkLog>();
-    public DbSet<SearchDocument> SearchDocuments => Set<SearchDocument>();
     public DbSet<DocumentChunk> DocumentChunks => Set<DocumentChunk>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

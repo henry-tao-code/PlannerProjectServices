@@ -178,6 +178,7 @@ public class IssueService(
         issue.SetReporter(dto.ReporterId);
 
         await unitOfWork.SaveChangesAsync(ct);
+        await searchIndexService.IndexIssueAsync(issue.Id, ct);
 
         return await MapAsync(issue, ct);
     }
@@ -201,6 +202,7 @@ public class IssueService(
         }
 
         await unitOfWork.SaveChangesAsync(ct);
+        await searchIndexService.IndexIssueAsync(issue.Id, ct);
 
         return await MapAsync(issue, ct);
     }

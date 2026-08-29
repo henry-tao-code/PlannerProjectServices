@@ -1,24 +1,18 @@
 ﻿using Domain.Entities;
-using Domain.Enums;
 
 namespace ProjectPlanner.Application.Common.Interfaces.Persistence;
 
 public interface ISearchIndexRepository
 {
-    Task<SearchDocument?> GetAsync(
-        SearchEntityType type,
-        int entityId,
-        CancellationToken ct);
-
-    Task AddAsync(
-        SearchDocument document,
-        CancellationToken ct);
-
-    Task UpdateAsync(
-        SearchDocument document,
-        CancellationToken ct);
-
-    Task DeleteAsync(
-        SearchDocument document,
-        CancellationToken ct);
+    Task EnsureIndexCreatedAsync(CancellationToken cancellationToken = default);
+    Task IndexDocumentAsync(SearchDocument document, CancellationToken cancellationToken = default);
+    Task BulkIndexDocumentsAsync(IEnumerable<SearchDocument> documents, CancellationToken cancellationToken = default);
+    Task DeleteDocumentAsync(string entityType, int entityId, CancellationToken cancellationToken = default);
+    Task<IEnumerable<SearchDocument>> SearchAsync(
+        string query,
+        int? projectId = null,
+        string? status = null,
+        int page = 1,
+        int pageSize = 20,
+        CancellationToken cancellationToken = default);
 }

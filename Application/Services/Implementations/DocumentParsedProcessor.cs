@@ -1,66 +1,39 @@
-﻿using Contracts.Dtos;
 using Contracts.Events;
-using Domain.Entities;
 using ProjectPlanner.Application.Common.Interfaces.AI;
 using ProjectPlanner.Application.Common.Interfaces.Persistence;
+using Domain.Enums;
+using System.Text.Json;
 
 namespace ProjectPlanner.Application.Services.Implementations;
 
 public class DocumentParsedProcessor(
-    IDocumentChunkRepository chunkRepository,
-    ITEIEmbeddingService embeddingService,
-    IUnitOfWork unitOfWork)
+    IIssueAttachmentRepository attachmentRepository,
+    IHybridIndexIngestor hybridIndexIngestor)
     : IDocumentParsedProcessor
 {
-
     public async Task ProcessAsync(
         DocumentParsedEvent parsedEvent,
         CancellationToken cancellationToken)
     {
-        var chunks =
-            parsedEvent.Chunks
-            .Select(x => new DocumentChunk
-            {
-                AttachmentId = parsedEvent.AttachmentId,
-                ChunkIndex = x.Index,
-                Content = x.Content
-            })
-            .ToList();
-
-        await chunkRepository.AddRangeAsync(
-            chunks,
+        var attachment = await attachmentRepository.GetByIdAsync(
+            parsedEvent.AttachmentId,
             cancellationToken);
 
-        await unitOfWork.SaveChangesAsync(
-            cancellationToken);
-
-        var embeddingRequest =
-            new EmbeddingRequestDto
+        if (attachment is not null)
+        {
+            if (parsedEvent.Structure is not null)
             {
-                Inputs = [.. chunks.Select(x => x.Content)],
+                attachment.DocumentStructureJson = JsonSerializer.Serialize(parsedEvent.Structure);
+            }
 
-                Truncate = true
-            };
-
-        var response =
-            await embeddingService.GetEmbeddingsAsync(
-                embeddingRequest,
-                cancellationToken);
-
-
-        if (response.Embeddings.Count != chunks.Count)
-        {
-            throw new Exception(
-                "Embedding count mismatch");
+            attachment.Status = AttachmentStatus.Indexed;
+            attachment.ProcessedAt = DateTime.UtcNow;
+            attachment.ProcessingError = null;
         }
 
-        for (int i = 0; i < chunks.Count; i++)
-        {
-            chunks[i].Embedding = new Pgvector.Vector(response.Embeddings[i]);
-        }
-
-
-        await unitOfWork.SaveChangesAsync(
+        await hybridIndexIngestor.IngestAsync(
+            parsedEvent.AttachmentId,
+            parsedEvent.Chunks,
             cancellationToken);
     }
 }

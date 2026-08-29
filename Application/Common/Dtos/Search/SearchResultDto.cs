@@ -1,11 +1,20 @@
 ﻿namespace ProjectPlanner.Application.Common.Dtos.Search;
 
-public class SearchResultDto
+public record SearchResultDto(
+    long EntityId,
+    string EntityType,
+    string IssueKey,
+    string Title,
+    string? Content,
+    int ProjectId,
+    string? ProjectName,
+    string? Status,
+    string? Priority,
+    string? AssigneeName,
+    double? Score
+)
 {
-    public long EntityId { get; set; }
-    public string EntityType { get; set; } = string.Empty;
-    public int ProjectId { get; set; }
-    public string Title { get; set; } = string.Empty;
-    public string Content { get; set; } = string.Empty;
-    public double Score { get; set; }
+    public string ChunkType { get; init; } = "content";
+    public int? PageNumber { get; init; }
+    public int? TableIndex { get; init; }
 }

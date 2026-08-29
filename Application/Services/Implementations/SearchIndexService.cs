@@ -7,8 +7,8 @@ namespace ProjectPlanner.Application.Services.Implementations;
 public class SearchIndexService(
     IIssueRepository issueRepository,
     IEpicRepository epicRepository,
-    ISearchIndexRepository searchRepository,
-    IUnitOfWork unitOfWork) : ISearchIndexService
+    IProjectRepository projectRepository,
+    ISearchIndexRepository searchRepository) : ISearchIndexService
 {
     public async Task IndexIssueAsync(
         int issueId,
@@ -16,27 +16,25 @@ public class SearchIndexService(
     {
         var issue = await issueRepository.GetByIdAsync(issueId, ct) ?? throw new KeyNotFoundException(
                 $"Issue {issueId} not found.");
-        var document = await searchRepository.GetAsync(
-            SearchEntityType.Issue,
-            issueId,
-            ct);
+        var project = await projectRepository.GetByIdAsync(issue.ProjectId, ct)
+            ?? throw new KeyNotFoundException($"Project {issue.ProjectId} not found.");
 
-        if (document is null)
+        await searchRepository.IndexDocumentAsync(new SearchDocument
         {
-            document = new SearchDocument
-            {
-                EntityType = SearchEntityType.Issue,
-                EntityId = issueId
-            };
-            await searchRepository.AddAsync(document, ct);
-        }
-
-        document.ProjectId = issue.ProjectId;
-        document.Title = issue.Title;
-        document.Content = issue.Description ?? string.Empty;
-        document.UpdatedAt = DateTime.UtcNow;
-
-        await unitOfWork.SaveChangesAsync(ct);
+            EntityType = SearchEntityType.Issue.ToString(),
+            EntityId = issue.Id,
+            IssueKey = issue.IssueKey,
+            Title = issue.Title,
+            Description = issue.Description,
+            ProjectId = issue.ProjectId,
+            ProjectName = project.Name,
+            Status = issue.Status.ToString(),
+            Priority = issue.Priority.ToString(),
+            AssigneeName = issue.Assignee?.Username,
+            ReporterName = issue.Reporter?.Username,
+            SprintId = issue.SprintId,
+            SprintName = issue.Sprint?.Name
+        }, ct);
     }
 
     public async Task IndexEpicAsync(
@@ -45,27 +43,21 @@ public class SearchIndexService(
     {
         var epic = await epicRepository.GetByIdAsync(epicId, ct) ?? throw new KeyNotFoundException(
                 $"Epic {epicId} not found.");
-        var document = await searchRepository.GetAsync(
-            SearchEntityType.Epic,
-            epicId,
-            ct);
+        var project = await projectRepository.GetByIdAsync(epic.ProjectId, ct)
+            ?? throw new KeyNotFoundException($"Project {epic.ProjectId} not found.");
 
-        if (document is null)
+        await searchRepository.IndexDocumentAsync(new SearchDocument
         {
-            document = new SearchDocument
-            {
-                EntityType = SearchEntityType.Epic,
-                EntityId = epicId
-            };
-            await searchRepository.AddAsync(document, ct);
-        }
-
-        document.ProjectId = epic.ProjectId;
-        document.Title = epic.Title;
-        document.Content = epic.Description ?? string.Empty;
-        document.UpdatedAt = DateTime.UtcNow;
-
-        await unitOfWork.SaveChangesAsync(ct);
+            EntityType = SearchEntityType.Epic.ToString(),
+            EntityId = epic.Id,
+            Title = epic.Title,
+            Description = string.Join(" ", new[] { epic.Summary, epic.Description }
+                .Where(value => !string.IsNullOrWhiteSpace(value))),
+            ProjectId = epic.ProjectId,
+            ProjectName = project.Name,
+            Status = epic.Status.ToString(),
+            AssigneeName = epic.Assignee?.Username
+        }, ct);
     }
 
     public async Task RemoveAsync(
@@ -73,16 +65,6 @@ public class SearchIndexService(
         int entityId,
         CancellationToken ct = default)
     {
-        var document = await searchRepository.GetAsync(
-            entityType,
-            entityId,
-            ct);
-
-        if (document is null)
-            return;
-
-        await searchRepository.DeleteAsync(document, ct);
-
-        await unitOfWork.SaveChangesAsync(ct);
+        await searchRepository.DeleteDocumentAsync(entityType.ToString(), entityId, ct);
     }
 }

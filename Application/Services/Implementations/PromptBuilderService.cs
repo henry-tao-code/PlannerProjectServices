@@ -24,8 +24,16 @@ public class PromptBuilderService : IPromptBuilderService
                     ? $", issue {source.IssueId.Value}"
                     : string.Empty;
 
+                var page = source.PageNumber.HasValue
+                    ? $", page {source.PageNumber.Value}"
+                    : string.Empty;
+
+                var table = source.TableIndex.HasValue
+                    ? $", table {source.TableIndex.Value + 1}"
+                    : string.Empty;
+
                 return $"""
-                    Source {index + 1} (chunk {source.ChunkId}, document "{source.DocumentName ?? "unknown"}"{issue}):
+                    Source {index + 1} (chunk {source.ChunkId}, {source.ChunkType}, document "{source.DocumentName ?? "unknown"}"{issue}{page}{table}):
                     <reference>
                     {content}
                     </reference>

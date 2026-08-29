@@ -5,7 +5,7 @@ import logging
 from kafka import KafkaConsumer
 
 from storage import resolve_storage_path
-from parser import parse_and_chunk_document
+from parser import parse_and_extract_document
 from producer import send_parsed_event, send_failed_event
 
 logger = logging.getLogger("docling-worker.consumer")
@@ -58,12 +58,21 @@ def start_consumer():
             # 1. Resolve physical path
             file_path = resolve_storage_path(storage_key)
 
-            # 2. Convert and chunk document via Docling
-            chunks = parse_and_chunk_document(file_path)
+            # 2. Convert, chunk, and extract deterministic document structure via Docling
+            parsed_document = parse_and_extract_document(file_path)
 
             # 3. PUBLISH TO KAFKA ('document.parsed' topic)
-            send_parsed_event(attachment_id=attachment_id, chunks=chunks)
-            logger.info("Successfully published %d chunks for attachmentId: %d", len(chunks), attachment_id)
+            send_parsed_event(
+                attachment_id=attachment_id,
+                chunks=parsed_document["chunks"],
+                structure=parsed_document["structure"],
+            )
+            logger.info(
+                "Successfully published %d chunks and %d tables for attachmentId: %d",
+                len(parsed_document["chunks"]),
+                parsed_document["structure"]["metadata"]["tableCount"],
+                attachment_id,
+            )
 
         except Exception as e:
             logger.error("Failed processing attachment %d: %s", attachment_id, e)

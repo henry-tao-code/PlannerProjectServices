@@ -1,5 +1,6 @@
 ﻿using Confluent.Kafka;
 using Contracts.Events;
+using Elastic.Clients.Elasticsearch;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.AI;
@@ -21,6 +22,7 @@ using ProjectPlanner.Infrastructure.AI.Configurations;
 using ProjectPlanner.Infrastructure.Messaging;
 using ProjectPlanner.Infrastructure.Persistence;
 using ProjectPlanner.Infrastructure.Persistence.Repositories;
+using ProjectPlanner.Infrastructure.Search;
 using ProjectPlanner.Infrastructure.Security;
 using ProjectPlanner.Infrastructure.Storage;
 using System.ClientModel;
@@ -69,7 +71,6 @@ public static class ConfigureServices
         services.AddScoped<IHistoryRepository, HistoryRepository>();
         services.AddScoped<IDevelopmentRepository, DevelopmentRepository>();
         services.AddScoped<IWorkLogRepository, WorkLogRepository>();
-        services.AddScoped<ISearchQueryRepository, SearchQueryRepository>();
         services.AddScoped<ISearchIndexRepository, SearchIndexRepository>();
         services.AddScoped<IDocumentChunkRepository, DocumentChunkRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
@@ -138,6 +139,8 @@ public static class ConfigureServices
 
         services.AddScoped<IVectorSearchService, VectorSearchService>();
         services.AddScoped<IKeywordSearchService, KeywordSearchService>();
+        services.AddScoped<IBm25SearchService, Bm25SearchService>();
+        services.AddScoped<IHybridIndexIngestor, HybridIndexIngestor>();
 
         services.AddSingleton<IChatClient>(sp =>
         {
@@ -156,16 +159,45 @@ public static class ConfigureServices
         return services;
     }
 
+    public static IServiceCollection AddSearchServices(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        var uri = configuration["Elasticsearch:Uri"] ?? "http://localhost:9200";
+
+        var settings = new ElasticsearchClientSettings(new Uri(uri));
+
+        services.AddSingleton(new ElasticsearchClient(settings));
+        services.AddHostedService<SearchIndexStartupService>();
+
+        return services;
+    }
+
     public static IServiceCollection AddMessagingServices(
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        var teiUrl = configuration["Tei:BaseUrl"] ?? "http://localhost:8080";
+        services.Configure<TeiOptions>(configuration.GetSection("Tei"));
+        services.Configure<DocumentParsedConsumerOptions>(
+            configuration.GetSection("Kafka:DocumentParsedConsumer"));
+
+        var teiOptions = configuration.GetSection("Tei").Get<TeiOptions>() ?? new TeiOptions();
         services.AddHttpClient<ITEIEmbeddingService, TeiEmbeddingService>(client =>
         {
-            client.BaseAddress = new Uri(teiUrl.EndsWith('/') ? teiUrl : $"{teiUrl}/");
-            client.Timeout = TimeSpan.FromSeconds(30);
+            client.BaseAddress = new Uri(teiOptions.BaseUrl.EndsWith('/')
+                ? teiOptions.BaseUrl
+                : $"{teiOptions.BaseUrl}/");
+            client.Timeout = TimeSpan.FromSeconds(Math.Max(1, teiOptions.TimeoutSeconds));
         });
+
+        services.AddHttpClient("TeiHealth", client =>
+        {
+            client.BaseAddress = new Uri(teiOptions.BaseUrl.EndsWith('/')
+                ? teiOptions.BaseUrl
+                : $"{teiOptions.BaseUrl}/");
+            client.Timeout = TimeSpan.FromSeconds(5);
+        });
+        services.AddHealthChecks().AddCheck<TeiHealthCheck>("tei");
 
         services.AddHostedService<DocumentParsedConsumerService>();
 
@@ -189,6 +221,7 @@ public static class ConfigureServices
             {
                 BootstrapServers = configuration["Kafka:BootstrapServers"],
                 GroupId = "document-processed-consumer-group",
+                AllowAutoCreateTopics = true,
                 AutoOffsetReset = AutoOffsetReset.Earliest,
                 EnableAutoCommit = false
             };

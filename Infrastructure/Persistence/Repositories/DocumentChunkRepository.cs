@@ -44,11 +44,8 @@ public class DocumentChunkRepository(
         long attachmentId,
         CancellationToken cancellationToken = default)
     {
-        var chunks =
-            await dbContext.DocumentChunks
-                .Where(x => x.AttachmentId == attachmentId)
-                .ToListAsync(cancellationToken);
-
-        dbContext.DocumentChunks.RemoveRange(chunks);
+        await dbContext.DocumentChunks
+            .Where(x => x.AttachmentId == attachmentId)
+            .ExecuteDeleteAsync(cancellationToken);
     }
 }

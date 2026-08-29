@@ -9,6 +9,10 @@ public class DocumentChunk
     public IssueAttachment Attachment { get; set; } = null!;
     public int ChunkIndex { get; set; }
     public string Content { get; set; } = null!;
+    public int TokenCount { get; set; }
+    public string ChunkType { get; set; } = "content";
+    public int? PageNumber { get; set; }
+    public int? TableIndex { get; set; }
     public Vector? Embedding { get; set; }
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 }

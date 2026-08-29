@@ -19,6 +19,11 @@ public class DocumentChunkConfiguration
             .HasMaxLength(8000)
             .IsRequired();
 
+        builder.Property(x => x.ChunkType)
+            .HasMaxLength(32)
+            .HasDefaultValue("content")
+            .IsRequired();
+
         builder.Property<NpgsqlTsVector>("SearchVector")
             .HasComputedColumnSql(
                 "to_tsvector('english', coalesce(\"Content\", ''))",

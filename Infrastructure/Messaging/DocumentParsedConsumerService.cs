@@ -4,6 +4,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Domain.Enums;
+using ProjectPlanner.Application.Common.Interfaces.Persistence;
 using ProjectPlanner.Application.Services;
 using System.Text.Json;
 
@@ -12,10 +15,13 @@ namespace ProjectPlanner.Infrastructure.Messaging;
 public class DocumentParsedConsumerService(
     IConfiguration configuration,
     IServiceScopeFactory scopeFactory,
+    IProducer<string, string> producer,
+    IOptions<DocumentParsedConsumerOptions> consumerOptions,
     ILogger<DocumentParsedConsumerService> logger)
     : BackgroundService
 {
     private const string DefaultTopic = "document.parsed";
+    private readonly DocumentParsedConsumerOptions _options = consumerOptions.Value;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -66,12 +72,54 @@ public class DocumentParsedConsumerService(
                         continue;
                     }
 
-                    using var scope = scopeFactory.CreateScope();
-                    var processor = scope.ServiceProvider.GetRequiredService<IDocumentParsedProcessor>();
+                    Exception? lastException = null;
+                    var maxAttempts = Math.Max(1, _options.MaxProcessingAttempts);
 
-                    await processor.ProcessAsync(parsedEvent, stoppingToken);
+                    for (var attempt = 1; attempt <= maxAttempts; attempt++)
+                    {
+                        try
+                        {
+                            using var scope = scopeFactory.CreateScope();
+                            var processor = scope.ServiceProvider.GetRequiredService<IDocumentParsedProcessor>();
 
-                    // Commit only after successful processing
+                            logger.LogInformation(
+                                "Processing attachment {AttachmentId} at {Topic}[{Partition}]@{Offset}, attempt {Attempt}/{MaxAttempts}",
+                                parsedEvent.AttachmentId, result.Topic, result.Partition.Value, result.Offset.Value,
+                                attempt, maxAttempts);
+
+                            await processor.ProcessAsync(parsedEvent, stoppingToken);
+                            lastException = null;
+                            break;
+                        }
+                        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+                        {
+                            throw;
+                        }
+                        catch (Exception ex)
+                        {
+                            lastException = ex;
+                            if (!IsTransient(ex) || attempt == maxAttempts)
+                            {
+                                break;
+                            }
+
+                            var delay = TimeSpan.FromSeconds(
+                                Math.Min(_options.RetryBaseDelaySeconds * Math.Pow(2, attempt - 1), 60));
+                            logger.LogWarning(
+                                ex,
+                                "Transient failure for attachment {AttachmentId}; retrying in {DelaySeconds} seconds",
+                                parsedEvent.AttachmentId, delay.TotalSeconds);
+                            await Task.Delay(delay, stoppingToken);
+                        }
+                    }
+
+                    if (lastException is not null)
+                    {
+                        await PublishDeadLetterAsync(result, parsedEvent, lastException, stoppingToken);
+                        await MarkAttachmentFailedAsync(parsedEvent.AttachmentId, lastException, stoppingToken);
+                    }
+
+                    // Success and dead-letter publication are both terminal outcomes for this offset.
                     consumer.Commit(result);
                     // logger.LogInformation("Processed attachment {AttachmentId}", parsedEvent.AttachmentId);
                 }
@@ -86,15 +134,14 @@ public class DocumentParsedConsumerService(
                 }
                 catch (Exception ex)
                 {
-                    logger.LogError(ex, "Transient error processing document.parsed event");
+                    logger.LogError(ex, "Unexpected document.parsed consumer failure");
 
-                    // 2b. FIX: Do NOT commit here. Pause before retrying to prevent rapid fail-loops 
-                    // if the database or external API is down.
+                    if (result is not null)
+                    {
+                        consumer.Seek(result.TopicPartitionOffset);
+                    }
+
                     await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
-
-                    // Note: Since we didn't commit, Kafka will re-deliver this message if the consumer restarts.
-                    // If you want it to retry immediately without restarting, you'd need a Polly retry policy 
-                    // inside `processor.ProcessAsync`.
                 }
             }
         }
@@ -106,5 +153,75 @@ public class DocumentParsedConsumerService(
         {
             consumer.Close();
         }
+    }
+
+    private static bool IsTransient(Exception exception) => exception switch
+    {
+        TaskCanceledException => true,
+        TimeoutException => true,
+        HttpRequestException { StatusCode: null } => true,
+        HttpRequestException { StatusCode: var status } when
+            status is System.Net.HttpStatusCode.RequestTimeout or
+                System.Net.HttpStatusCode.TooManyRequests || (int)status >= 500 => true,
+        _ => false
+    };
+
+    private async Task PublishDeadLetterAsync(
+        ConsumeResult<Ignore, string> result,
+        DocumentParsedEvent parsedEvent,
+        Exception exception,
+        CancellationToken cancellationToken)
+    {
+        var envelope = JsonSerializer.Serialize(new
+        {
+            parsedEvent,
+            source = new
+            {
+                result.Topic,
+                Partition = result.Partition.Value,
+                Offset = result.Offset.Value
+            },
+            error = new
+            {
+                Type = exception.GetType().FullName,
+                exception.Message
+            },
+            failedAt = DateTimeOffset.UtcNow
+        });
+
+        await producer.ProduceAsync(
+            _options.DeadLetterTopic,
+            new Message<string, string>
+            {
+                Key = parsedEvent.AttachmentId.ToString(),
+                Value = envelope
+            },
+            cancellationToken);
+
+        logger.LogError(
+            exception,
+            "Attachment {AttachmentId} exhausted processing attempts and was published to {DeadLetterTopic}",
+            parsedEvent.AttachmentId, _options.DeadLetterTopic);
+    }
+
+    private async Task MarkAttachmentFailedAsync(
+        long attachmentId,
+        Exception exception,
+        CancellationToken cancellationToken)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var repository = scope.ServiceProvider.GetRequiredService<IIssueAttachmentRepository>();
+        var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+        var attachment = await repository.GetByIdAsync(attachmentId, cancellationToken);
+        if (attachment is null)
+        {
+            return;
+        }
+
+        attachment.Status = AttachmentStatus.Failed;
+        attachment.ProcessingError = exception.Message.Length <= 2000
+            ? exception.Message
+            : exception.Message[..2000];
+        await unitOfWork.SaveChangesAsync(cancellationToken);
     }
 }

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using NpgsqlTypes;
@@ -13,9 +14,11 @@ using ProjectPlanner.Infrastructure.Persistence;
 namespace ProjectPlanner.Infrastructure.Migrations
 {
     [DbContext(typeof(ProjectPlannerDbContext))]
-    partial class ProjectPlannerDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260814062725_RemoveLegacySearchDocuments")]
+    partial class RemoveLegacySearchDocuments
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -41,13 +44,6 @@ namespace ProjectPlanner.Infrastructure.Migrations
                     b.Property<int>("ChunkIndex")
                         .HasColumnType("integer");
 
-                    b.Property<string>("ChunkType")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)")
-                        .HasDefaultValue("content");
-
                     b.Property<string>("Content")
                         .IsRequired()
                         .HasMaxLength(8000)
@@ -59,19 +55,10 @@ namespace ProjectPlanner.Infrastructure.Migrations
                     b.Property<Vector>("Embedding")
                         .HasColumnType("vector(1024)");
 
-                    b.Property<int?>("PageNumber")
-                        .HasColumnType("integer");
-
                     b.Property<NpgsqlTsVector>("SearchVector")
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("tsvector")
                         .HasComputedColumnSql("to_tsvector('english', coalesce(\"Content\", ''))", true);
-
-                    b.Property<int?>("TableIndex")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("TokenCount")
-                        .HasColumnType("integer");
 
                     b.HasKey("Id");
 
@@ -212,9 +199,6 @@ namespace ProjectPlanner.Infrastructure.Migrations
 
                     b.Property<int?>("DeletedByUserId")
                         .HasColumnType("integer");
-
-                    b.Property<string>("DocumentStructureJson")
-                        .HasColumnType("jsonb");
 
                     b.Property<long>("FileSize")
                         .HasColumnType("bigint");

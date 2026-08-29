@@ -29,7 +29,8 @@ public static class ProjectEndpoints
         group.MapGet("/{id:int}/settings", GetProjectSettingsAsync);
         group.MapPut("/{id:int}/settings", UpdateProjectSettingsAsync);
 
-        group.MapGet("/project/{projectId:int}/search", SearchProjectAsync);
+        // group.MapGet("/{projectId:int}/search", SearchProjectAsync);
+        app.MapGet("/api/projects/{projectId}/search", SearchProjectAsync).AllowAnonymous();
 
         return app;
     }
@@ -272,10 +273,41 @@ public static class ProjectEndpoints
         }
     }
 
+    // ---------------- SEARCH ----------------
+
+    //private static async Task<Results<Ok<IEnumerable<SearchResultDto>>, BadRequest<string>, UnauthorizedHttpResult>>
+    //SearchProjectAsync(
+    //    int projectId,
+    //    [FromQuery] string? query,
+    //    ClaimsPrincipal userPrincipal,
+    //    ISearchService searchService,
+    //    CancellationToken ct)
+    //{
+    //    try
+    //    {
+    //        GetUserIdOrThrow(userPrincipal);
+
+    //        if (string.IsNullOrWhiteSpace(query))
+    //        {
+    //            return TypedResults.BadRequest("Search query parameter cannot be empty.");
+    //        }
+
+    //        var results = await searchService.SearchAsync(
+    //            new SearchRequestDto(query.Trim(), projectId, PageSize: 50),
+    //            ct);
+
+    //        return TypedResults.Ok<IEnumerable<SearchResultDto>>(results.Items);
+    //    }
+    //    catch (UnauthorizedAccessException)
+    //    {
+    //        return Unauthorized();
+    //    }
+    //}
+
     private static async Task<Results<Ok<IEnumerable<SearchResultDto>>, BadRequest<string>>> SearchProjectAsync(
     int projectId,
     [FromQuery] string? query,
-    ISearchQueryService searchQueryService,
+    ISearchService searchService,
     CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(query))
@@ -283,8 +315,10 @@ public static class ProjectEndpoints
             return TypedResults.BadRequest("Search query parameter cannot be empty.");
         }
 
-        var results = await searchQueryService.SearchAsync(projectId, query, ct);
+        var results = await searchService.SearchAsync(
+            new SearchRequestDto(query.Trim(), projectId, PageSize: 50),
+            ct);
 
-        return TypedResults.Ok<IEnumerable<SearchResultDto>>(results);
+        return TypedResults.Ok<IEnumerable<SearchResultDto>>(results.Items);
     }
 }
